@@ -55,3 +55,7 @@ OutLoud/build/
 *.ipa
 *.dSYM.zip
 *.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
