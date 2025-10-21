@@ -94,7 +94,6 @@ struct SessionView: View {
         .navigationBarBackButtonHidden(viewModel.state == .recording)
         .navigationBarItems(leading: backButton)
         .animation(.easeInOut(duration: 0.25), value: viewModel.state)
-        .animation(.easeInOut(duration: 0.25), value: viewModel.transcriptSegments.count)
         .animation(.easeInOut(duration: 0.25), value: viewModel.analysisResult != nil)
     }
 
@@ -287,7 +286,7 @@ struct SessionView: View {
     // MARK: - Transcript
 
     private var hasTranscriptContent: Bool {
-        !transcriptParagraphs.isEmpty || partialTranscript != nil
+        !viewModel.fullTranscript.isEmpty
     }
 
     private var transcriptView: some View {
@@ -311,81 +310,16 @@ struct SessionView: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: SessionTheme.Spacing.lg) {
-                ForEach(transcriptParagraphs, id: \.self) { paragraph in
-                    Text(paragraph)
-                        .font(.body)
-                        .foregroundColor(SessionTheme.textPrimary)
-                        .lineSpacing(6)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                if let partial = partialTranscript {
-                    Divider()
-                        .opacity(0.3)
-
-                    Text(partial)
-                        .font(.body)
-                        .italic()
-                        .foregroundColor(SessionTheme.textSecondary)
-                }
-            }
+            Text(viewModel.fullTranscript)
+                .font(.body)
+                .foregroundColor(SessionTheme.textPrimary)
+                .lineSpacing(6)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(SessionTheme.Spacing.xl)
         .background(SessionTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.xl))
         .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
-    }
-
-    private var partialTranscript: String? {
-        viewModel.transcriptSegments
-            .last(where: { !$0.isFinal })?
-            .text
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var transcriptParagraphs: [String] {
-        let finalSegments = viewModel.transcriptSegments
-            .filter { $0.isFinal }
-            .sorted { $0.timestamp < $1.timestamp }
-
-        guard !finalSegments.isEmpty else { return [] }
-
-        var paragraphs: [String] = []
-        var currentSentences: [String] = []
-        var seenSentences = Set<String>()
-        var lastTimestamp: Date?
-
-        for segment in finalSegments {
-            let sentences = splitIntoSentences(from: segment.text)
-            let parts = sentences.isEmpty ? [segment.text] : sentences
-
-            for rawSentence in parts {
-                let sentence = rawSentence.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !sentence.isEmpty else { continue }
-
-                let canonical = normalizedForDuplicateCheck(sentence)
-                guard !seenSentences.contains(canonical) else { continue }
-                seenSentences.insert(canonical)
-
-                if let last = lastTimestamp,
-                   segment.timestamp.timeIntervalSince(last) > paragraphBreakThreshold,
-                   !currentSentences.isEmpty {
-                    paragraphs.append(currentSentences.joined(separator: " "))
-                    currentSentences = []
-                }
-
-                currentSentences.append(sentence)
-            }
-
-            lastTimestamp = segment.timestamp
-        }
-
-        if !currentSentences.isEmpty {
-            paragraphs.append(currentSentences.joined(separator: " "))
-        }
-
-        return paragraphs
     }
 
     // MARK: - Analysis

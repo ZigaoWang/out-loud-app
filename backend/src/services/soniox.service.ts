@@ -15,11 +15,11 @@ export class SonioxService {
   private ws: WebSocket | null = null;
   private onTranscriptCallback: ((text: string, isFinal: boolean) => void) | null = null;
   private onEndpointCallback: (() => void) | null = null;
-  private lastSentPartialText: string = ''; // Track last partial to avoid duplicates
-  private lastSentFinalText: string = ''; // Track last final to avoid duplicates
+  private finalTranscript: string = ''; // Accumulated final tokens
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
+      this.finalTranscript = ''; // Reset on new connection
       this.ws = new WebSocket(config.soniox.wsUrl);
 
       this.ws.on('open', () => {
@@ -54,34 +54,30 @@ export class SonioxService {
 
           // Parse tokens according to Soniox API docs
           if (message.tokens && message.tokens.length > 0) {
-            let transcript = '';
-            let hasAnyFinal = false;
+            let finalTokens = '';
+            let nonFinalTokens = '';
 
+            // Separate final and non-final tokens
             for (const token of message.tokens) {
               if (token.text) {
-                transcript += token.text;
                 if (token.is_final) {
-                  hasAnyFinal = true;
+                  finalTokens += token.text;
+                } else {
+                  nonFinalTokens += token.text;
                 }
               }
             }
 
-            // Only send new text that hasn't been sent before
-            if (transcript && this.onTranscriptCallback) {
-              if (hasAnyFinal) {
-                // For final transcripts, check if different from last final
-                if (transcript !== this.lastSentFinalText) {
-                  this.lastSentFinalText = transcript;
-                  this.lastSentPartialText = ''; // Reset partial tracking
-                  this.onTranscriptCallback(transcript, true);
-                }
-              } else {
-                // For partial transcripts, only send if different from last partial
-                if (transcript !== this.lastSentPartialText) {
-                  this.lastSentPartialText = transcript;
-                  this.onTranscriptCallback(transcript, false);
-                }
-              }
+            // Handle final tokens - append to accumulated transcript
+            if (finalTokens && this.onTranscriptCallback) {
+              this.finalTranscript += finalTokens;
+              this.onTranscriptCallback(this.finalTranscript, true);
+            }
+
+            // Handle non-final tokens - send as preview (will be replaced)
+            if (nonFinalTokens && this.onTranscriptCallback) {
+              const previewText = this.finalTranscript + nonFinalTokens;
+              this.onTranscriptCallback(previewText, false);
             }
           }
 

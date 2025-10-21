@@ -4,12 +4,12 @@ import Combine
 class SessionViewModel: ObservableObject {
     @Published var state: RecordingState = .idle
     @Published var currentCaption: String = ""
-    @Published var displayedCaption: String = "" // NEW: For streaming effect
-    @Published var transcriptSegments: [TranscriptSegment] = []
+    @Published var displayedCaption: String = ""
+    @Published var fullTranscript: String = "" // Single flowing transcript
     @Published var interactionQuestion: String?
     @Published var analysisResult: AnalysisResult?
     @Published var errorMessage: String?
-    @Published var audioLevel: Float = 0.0  // NEW: Audio level for visualization
+    @Published var audioLevel: Float = 0.0
 
     private var session: Session
     private let audioService: AudioRecordingService
@@ -18,9 +18,6 @@ class SessionViewModel: ObservableObject {
     private var recordingPreparationWorkItem: DispatchWorkItem?
     private var ignoreInitialTranscriptWorkItem: DispatchWorkItem?
     private var isIgnoringInitialTranscript = false
-    private var lastFinalTranscript: String = ""
-    private var lastFinalChunk: String = ""
-    private var lastPartialText: String = ""
     private let recordingPreparationDelay: TimeInterval = 0.6
     private let initialTranscriptIgnoreDuration: TimeInterval = 0.8
 
@@ -51,93 +48,10 @@ class SessionViewModel: ObservableObject {
         // WebSocket callbacks
         webSocketService.onTranscript = { [weak self] text, isFinal in
             DispatchQueue.main.async {
-                guard let self = self else { return }
-
-                // Skip empty text
-                if text.isEmpty { return }
-
-                if self.isIgnoringInitialTranscript {
-                    return
-                }
-
-                let normalizedText = self.normalizeTranscript(text)
-
-                if normalizedText.isEmpty {
-                    return
-                }
-
+                guard let self = self, !self.isIgnoringInitialTranscript else { return }
+                self.fullTranscript = text
                 if isFinal {
-                    if normalizedText == self.lastFinalTranscript {
-                        return
-                    }
-
-                    var newChunk = normalizedText
-
-                    if !self.lastFinalTranscript.isEmpty,
-                       normalizedText.hasPrefix(self.lastFinalTranscript) {
-                        newChunk = String(normalizedText.dropFirst(self.lastFinalTranscript.count))
-                        newChunk = newChunk.trimmingCharacters(in: .whitespacesAndNewlines)
-                    }
-
-                    guard !newChunk.isEmpty else {
-                        self.lastFinalTranscript = normalizedText
-                        return
-                    }
-
-                    if newChunk == self.lastFinalChunk {
-                        self.lastFinalTranscript = normalizedText
-                        return
-                    }
-
-                    // Remove temporary partial segments before adding final chunk
-                    self.transcriptSegments.removeAll { !$0.isFinal }
-
-                    self.transcriptSegments.append(
-                        TranscriptSegment(
-                            text: newChunk,
-                            isFinal: true,
-                            timestamp: Date()
-                        )
-                    )
-
-                    self.lastFinalChunk = newChunk
-                    self.lastPartialText = ""
-                    self.lastFinalTranscript = normalizedText
-
-                    let finalText = self.transcriptSegments
-                        .filter { $0.isFinal }
-                        .map { $0.text }
-                        .joined(separator: " ")
-                    self.session.transcript = finalText
-                } else {
-                    // Partial transcript - update or add
-                    // Remove previous partial to keep list tidy
-                    if let partialIndex = self.transcriptSegments.lastIndex(where: { !$0.isFinal }) {
-                        self.transcriptSegments.remove(at: partialIndex)
-                    }
-
-                    var partialText = normalizedText
-                    if !self.lastFinalTranscript.isEmpty,
-                       partialText.hasPrefix(self.lastFinalTranscript) {
-                        partialText = String(partialText.dropFirst(self.lastFinalTranscript.count))
-                       partialText = partialText.trimmingCharacters(in: .whitespacesAndNewlines)
-                    }
-
-                    guard !partialText.isEmpty else { return }
-
-                    if partialText == self.lastPartialText {
-                        return
-                    }
-
-                    self.transcriptSegments.append(
-                        TranscriptSegment(
-                            text: partialText,
-                            isFinal: false,
-                            timestamp: Date()
-                        )
-                    )
-
-                    self.lastPartialText = partialText
+                    self.session.transcript = text
                 }
             }
         }
@@ -173,28 +87,18 @@ class SessionViewModel: ObservableObject {
     func startSession() {
         state = .preparing
         session.startTime = Date()
-        lastFinalTranscript = ""
-        lastFinalChunk = ""
-        lastPartialText = ""
+        fullTranscript = ""
         isIgnoringInitialTranscript = true
-
-        // Connect WebSocket (recording will auto-start via onConnected callback)
         webSocketService.connect(sessionId: session.id, mode: session.mode)
     }
 
     func stopSession() {
         state = .processing
         session.isRecording = false
-
         recordingPreparationWorkItem?.cancel()
         ignoreInitialTranscriptWorkItem?.cancel()
         isIgnoringInitialTranscript = false
-        lastPartialText = ""
-
-        // Stop recording
         audioService.stopRecording()
-
-        // End session (triggers analysis)
         webSocketService.endSession()
     }
 
@@ -206,7 +110,7 @@ class SessionViewModel: ObservableObject {
         state = .idle
         currentCaption = ""
         displayedCaption = ""
-        transcriptSegments = []
+        fullTranscript = ""
         interactionQuestion = nil
         analysisResult = nil
         errorMessage = nil
@@ -216,10 +120,6 @@ class SessionViewModel: ObservableObject {
         recordingPreparationWorkItem?.cancel()
         ignoreInitialTranscriptWorkItem?.cancel()
         isIgnoringInitialTranscript = false
-        lastFinalTranscript = ""
-        lastFinalChunk = ""
-        lastPartialText = ""
-
         webSocketService.disconnect()
     }
 
@@ -290,14 +190,5 @@ class SessionViewModel: ObservableObject {
 
         ignoreInitialTranscriptWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + initialTranscriptIgnoreDuration, execute: workItem)
-    }
-
-    private func normalizeTranscript(_ text: String) -> String {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard !trimmed.isEmpty else { return "" }
-
-        let components = trimmed.components(separatedBy: .whitespacesAndNewlines)
-        return components.filter { !$0.isEmpty }.joined(separator: " ")
     }
 }
