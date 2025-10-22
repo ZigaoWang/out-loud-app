@@ -21,8 +21,8 @@ class SessionViewModel: ObservableObject {
     private let recordingPreparationDelay: TimeInterval = 0.6
     private let initialTranscriptIgnoreDuration: TimeInterval = 0.8
 
-    init(mode: SessionMode, serverURL: String = "ws://localhost:3000") {
-        self.session = Session(mode: mode)
+    init(serverURL: String = "ws://localhost:3000") {
+        self.session = Session()
         self.audioService = AudioRecordingService()
         self.webSocketService = WebSocketService(serverURL: serverURL)
 
@@ -71,8 +71,16 @@ class SessionViewModel: ObservableObject {
 
         webSocketService.onAnalysis = { [weak self] analysis in
             DispatchQueue.main.async {
-                self?.analysisResult = analysis
-                self?.state = .completed
+                guard let self = self else { return }
+                self.analysisResult = analysis
+                self.state = .completed
+
+                // Save session
+                SessionManager.shared.saveSession(
+                    self.session,
+                    analysis: analysis,
+                    audioURL: self.session.audioFileURL
+                )
             }
         }
 
@@ -89,12 +97,14 @@ class SessionViewModel: ObservableObject {
         session.startTime = Date()
         fullTranscript = ""
         isIgnoringInitialTranscript = true
-        webSocketService.connect(sessionId: session.id, mode: session.mode)
+        webSocketService.connect(sessionId: session.id)
     }
 
     func stopSession() {
         state = .processing
         session.isRecording = false
+        session.endTime = Date()
+        session.audioFileURL = audioService.getRecordingURL()
         recordingPreparationWorkItem?.cancel()
         ignoreInitialTranscriptWorkItem?.cancel()
         isIgnoringInitialTranscript = false
@@ -114,7 +124,7 @@ class SessionViewModel: ObservableObject {
         interactionQuestion = nil
         analysisResult = nil
         errorMessage = nil
-        session = Session(mode: session.mode)
+        session = Session()
         captionTimer?.invalidate()
         captionTimer = nil
         recordingPreparationWorkItem?.cancel()

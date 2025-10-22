@@ -4,14 +4,13 @@ import { AIService } from '../services/ai.service';
 
 interface Session {
   id: string;
-  mode: 'solo' | 'interactive';
   transcript: string;
   startTime: number;
   pauseTimes: number[];
   sonioxService: SonioxService;
   clientWs: WebSocket;
   lastCaptionTime: number;
-  sentFinalTexts: Set<string>; // Track all sent final transcripts
+  sentFinalTexts: Set<string>;
 }
 
 export class TranscriptionController {
@@ -22,12 +21,11 @@ export class TranscriptionController {
     this.aiService = new AIService();
   }
 
-  async handleConnection(ws: WebSocket, sessionId: string, mode: 'solo' | 'interactive') {
+  async handleConnection(ws: WebSocket, sessionId: string) {
     const sonioxService = new SonioxService();
 
     const session: Session = {
       id: sessionId,
-      mode,
       transcript: '',
       startTime: Date.now(),
       pauseTimes: [],
@@ -66,7 +64,7 @@ export class TranscriptionController {
           isFinal,
         }));
 
-        // Generate real-time caption every 5-10 seconds (using 7 seconds as middle ground)
+        // Generate real-time caption every 7 seconds
         const now = Date.now();
         const timeSinceLastCaption = (now - session.lastCaptionTime) / 1000;
 
@@ -83,26 +81,6 @@ export class TranscriptionController {
             }
           } catch (error) {
             console.error('Caption generation failed:', error);
-          }
-        }
-
-        // For interactive mode, check if we should intervene
-        if (mode === 'interactive' && isFinal) {
-          try {
-            const suggestion = await this.aiService.shouldInteractNow(
-              session.transcript,
-              session.pauseTimes.slice(-5),
-              ''
-            );
-
-            if (suggestion.shouldInterrupt && suggestion.question) {
-              ws.send(JSON.stringify({
-                type: 'interaction',
-                question: suggestion.question,
-              }));
-            }
-          } catch (error) {
-            console.error('Interactive question failed:', error);
           }
         }
       });

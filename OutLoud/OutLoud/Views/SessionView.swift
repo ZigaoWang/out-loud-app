@@ -31,16 +31,8 @@ private enum SessionTheme {
 }
 
 struct SessionView: View {
-    let mode: SessionMode
-    @StateObject private var viewModel: SessionViewModel
+    @StateObject private var viewModel = SessionViewModel()
     @Environment(\.presentationMode) var presentationMode
-
-    private let paragraphBreakThreshold: TimeInterval = 12
-
-    init(mode: SessionMode) {
-        self.mode = mode
-        _viewModel = StateObject(wrappedValue: SessionViewModel(mode: mode))
-    }
 
     var body: some View {
         ZStack {
@@ -95,6 +87,11 @@ struct SessionView: View {
         .navigationBarItems(leading: backButton)
         .animation(.easeInOut(duration: 0.25), value: viewModel.state)
         .animation(.easeInOut(duration: 0.25), value: viewModel.analysisResult != nil)
+        .onAppear {
+            if viewModel.state == .idle {
+                viewModel.startSession()
+            }
+        }
     }
 
     // MARK: - Header & Status
@@ -102,13 +99,6 @@ struct SessionView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: SessionTheme.Spacing.sm) {
             Text("Out Loud")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(SessionTheme.textTertiary)
-                .textCase(.uppercase)
-                .tracking(1.4)
-
-            Text(mode == .solo ? "Solo Session" : "Interactive Session")
                 .font(.system(size: 32, weight: .semibold, design: .rounded))
                 .foregroundColor(SessionTheme.textPrimary)
 

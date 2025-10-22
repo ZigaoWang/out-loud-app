@@ -21,17 +21,51 @@ struct Report: Codable {
 
 struct Session {
     let id: String
-    let mode: SessionMode
     var transcript: String
     var startTime: Date
+    var endTime: Date?
     var isRecording: Bool
+    var audioFileURL: URL?
 
-    init(mode: SessionMode) {
+    init() {
         self.id = UUID().uuidString
-        self.mode = mode
         self.transcript = ""
         self.startTime = Date()
+        self.endTime = nil
         self.isRecording = false
+        self.audioFileURL = nil
+    }
+
+    var duration: TimeInterval {
+        guard let end = endTime else {
+            return Date().timeIntervalSince(startTime)
+        }
+        return end.timeIntervalSince(startTime)
+    }
+}
+
+// MARK: - Saved Session Models
+
+struct SavedSession: Codable, Identifiable {
+    let id: String
+    let transcript: String
+    let startTime: Date
+    let endTime: Date
+    let duration: TimeInterval
+    let audioFileName: String?
+    let analysis: AnalysisResult?
+
+    var formattedDate: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: startTime)
+    }
+
+    var formattedDuration: String {
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
+        return String(format: "%d:%02d", minutes, seconds)
     }
 }
 
@@ -43,11 +77,4 @@ enum RecordingState {
     case recording
     case processing
     case completed
-}
-
-struct TranscriptSegment: Identifiable {
-    let id = UUID()
-    let text: String
-    let isFinal: Bool
-    let timestamp: Date
 }

@@ -16,8 +16,8 @@ class WebSocketService: WebSocketDelegate {
         self.serverURL = serverURL
     }
 
-    func connect(sessionId: String, mode: SessionMode) {
-        let urlString = "\(serverURL)?sessionId=\(sessionId)&mode=\(mode.rawValue)"
+    func connect(sessionId: String) {
+        let urlString = "\(serverURL)?sessionId=\(sessionId)"
         guard let url = URL(string: urlString) else {
             onError?("Invalid URL")
             return
@@ -130,9 +130,4 @@ class WebSocketService: WebSocketDelegate {
             followUpQuestion: data["followUpQuestion"] as? String ?? ""
         )
     }
-}
-
-enum SessionMode: String {
-    case solo
-    case interactive
 }

@@ -12,10 +12,10 @@
 		AA0000050000000000000001 /* AudioRecordingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000060000000000000001 /* AudioRecordingService.swift */; };
 		AA0000070000000000000001 /* WebSocketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000080000000000000001 /* WebSocketService.swift */; };
 		AA0000090000000000000001 /* SessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000A0000000000000001 /* SessionViewModel.swift */; };
-		AA00000B0000000000000001 /* ModeSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000C0000000000000001 /* ModeSelectionView.swift */; };
 		AA00000D0000000000000001 /* SessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000E0000000000000001 /* SessionView.swift */; };
 		AA00000F0000000000000001 /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000100000000000000001 /* Starscream */; };
 		AA0000110000000000000002 /* AudioWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000120000000000000002 /* AudioWaveformView.swift */; };
+		AA0000130000000000000002 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000140000000000000002 /* SessionManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,10 +25,10 @@
 		AA0000060000000000000001 /* AudioRecordingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecordingService.swift; sourceTree = "<group>"; };
 		AA0000080000000000000001 /* WebSocketService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketService.swift; sourceTree = "<group>"; };
 		AA00000A0000000000000001 /* SessionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionViewModel.swift; sourceTree = "<group>"; };
-		AA00000C0000000000000001 /* ModeSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeSelectionView.swift; sourceTree = "<group>"; };
 		AA00000E0000000000000001 /* SessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionView.swift; sourceTree = "<group>"; };
 		AA0000110000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA0000120000000000000002 /* AudioWaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioWaveformView.swift; sourceTree = "<group>"; };
+		AA0000140000000000000002 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,6 +85,7 @@
 			children = (
 				AA0000060000000000000001 /* AudioRecordingService.swift */,
 				AA0000080000000000000001 /* WebSocketService.swift */,
+				AA0000140000000000000002 /* SessionManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -100,7 +101,6 @@
 		AA0000190000000000000001 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				AA00000C0000000000000001 /* ModeSelectionView.swift */,
 				AA00000E0000000000000001 /* SessionView.swift */,
 				AA0000120000000000000002 /* AudioWaveformView.swift */,
 			);
@@ -186,9 +186,9 @@
 				AA0000050000000000000001 /* AudioRecordingService.swift in Sources */,
 				AA0000070000000000000001 /* WebSocketService.swift in Sources */,
 				AA0000090000000000000001 /* SessionViewModel.swift in Sources */,
-				AA00000B0000000000000001 /* ModeSelectionView.swift in Sources */,
 				AA00000D0000000000000001 /* SessionView.swift in Sources */,
 				AA0000110000000000000002 /* AudioWaveformView.swift in Sources */,
+				AA0000130000000000000002 /* SessionManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

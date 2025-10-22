@@ -23,11 +23,10 @@ app.get('/health', (req, res) => {
 wss.on('connection', (ws: WebSocket, req) => {
   const url = new URL(req.url!, `http://${req.headers.host}`);
   const sessionId = url.searchParams.get('sessionId') || `session_${Date.now()}`;
-  const mode = (url.searchParams.get('mode') || 'solo') as 'solo' | 'interactive';
 
-  console.log(`New WebSocket connection: ${sessionId}, mode: ${mode}`);
+  console.log(`New WebSocket connection: ${sessionId}`);
 
-  transcriptionController.handleConnection(ws, sessionId, mode);
+  transcriptionController.handleConnection(ws, sessionId);
 });
 
 server.listen(config.port, () => {
