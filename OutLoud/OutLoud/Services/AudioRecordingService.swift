@@ -27,9 +27,9 @@ class AudioRecordingService: NSObject {
     }
 
     func startRecording() throws {
-        // Create temporary audio file
+        // Create temporary audio file - use CAF format (most reliable for AVAudioFile)
         let tempDir = FileManager.default.temporaryDirectory
-        audioFileURL = tempDir.appendingPathComponent(UUID().uuidString).appendingPathExtension("m4a")
+        audioFileURL = tempDir.appendingPathComponent(UUID().uuidString).appendingPathExtension("caf")
 
         audioEngine = AVAudioEngine()
         guard let inputNode = audioEngine?.inputNode else {
@@ -53,9 +53,15 @@ class AudioRecordingService: NSObject {
 
         audioFormat = targetFormat
 
-        // Create audio file for recording
+        // Create audio file for recording in CAF format with LPCM
         if let audioFileURL = audioFileURL {
-            audioFile = try? AVAudioFile(forWriting: audioFileURL, settings: targetFormat.settings)
+            do {
+                audioFile = try AVAudioFile(forWriting: audioFileURL, settings: targetFormat.settings)
+                print("📝 Created audio file: \(audioFileURL.lastPathComponent)")
+            } catch {
+                print("❌ Failed to create audio file: \(error)")
+                throw RecordingError.invalidFormat
+            }
         }
 
         // Create audio converter for format conversion
@@ -74,6 +80,7 @@ class AudioRecordingService: NSObject {
 
         audioEngine?.prepare()
         try audioEngine?.start()
+        print("🎙️ Recording started")
     }
 
     func getRecordingURL() -> URL? {
@@ -86,6 +93,13 @@ class AudioRecordingService: NSObject {
 
         // Then remove tap
         inputNode?.removeTap(onBus: 0)
+
+        // Log the file info
+        if let url = audioFileURL {
+            let fileExists = FileManager.default.fileExists(atPath: url.path)
+            let fileSize = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int64) ?? 0
+            print("🎙️ Recording stopped - File: \(url.lastPathComponent), Exists: \(fileExists), Size: \(fileSize) bytes")
+        }
 
         // Clean up
         inputNode = nil

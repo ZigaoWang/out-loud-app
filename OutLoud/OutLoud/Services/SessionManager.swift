@@ -31,10 +31,21 @@ class SessionManager: ObservableObject {
 
         // Copy audio file to permanent location
         if let audioURL = audioURL {
-            audioFileName = "\(session.id).m4a"
+            // Use the original file extension from the temp file
+            let fileExtension = audioURL.pathExtension
+            audioFileName = "\(session.id).\(fileExtension)"
             let destinationURL = audioDirectory.appendingPathComponent(audioFileName!)
 
-            try? FileManager.default.copyItem(at: audioURL, to: destinationURL)
+            do {
+                // Remove existing file if it exists
+                if FileManager.default.fileExists(atPath: destinationURL.path) {
+                    try FileManager.default.removeItem(at: destinationURL)
+                }
+                try FileManager.default.copyItem(at: audioURL, to: destinationURL)
+                print("💾 Saved audio file: \(audioFileName!) (size: \((try? FileManager.default.attributesOfItem(atPath: destinationURL.path)[.size] as? Int64) ?? 0) bytes)")
+            } catch {
+                print("❌ Failed to copy audio file: \(error)")
+            }
         }
 
         let savedSession = SavedSession(
