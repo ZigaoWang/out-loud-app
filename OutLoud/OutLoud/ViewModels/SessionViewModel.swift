@@ -20,11 +20,13 @@ class SessionViewModel: ObservableObject {
     private var isIgnoringInitialTranscript = false
     private let recordingPreparationDelay: TimeInterval = 0.6
     private let initialTranscriptIgnoreDuration: TimeInterval = 0.8
+    private let parentSessionId: String?
 
-    init(serverURL: String = "ws://localhost:3000") {
+    init(serverURL: String = "ws://localhost:3000", parentSessionId: String? = nil) {
         self.session = Session()
         self.audioService = AudioRecordingService()
         self.webSocketService = WebSocketService(serverURL: serverURL)
+        self.parentSessionId = parentSessionId
 
         setupServices()
     }
@@ -69,17 +71,32 @@ class SessionViewModel: ObservableObject {
             }
         }
 
-        webSocketService.onAnalysis = { [weak self] analysis in
+        webSocketService.onAnalysis = { [weak self] analysis, words in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 self.analysisResult = analysis
                 self.state = .completed
 
+                // Convert words to transcript segments
+                var segments: [TranscriptSegment]? = nil
+                if let words = words, !words.isEmpty {
+                    // Group words into segments (for now, one segment with all words)
+                    let segment = TranscriptSegment(
+                        text: self.session.transcript,
+                        words: words,
+                        startTime: words.first?.startTime ?? 0,
+                        endTime: words.last?.endTime ?? 0
+                    )
+                    segments = [segment]
+                }
+
                 // Save session
                 SessionManager.shared.saveSession(
                     self.session,
                     analysis: analysis,
-                    audioURL: self.session.audioFileURL
+                    audioURL: self.session.audioFileURL,
+                    transcriptSegments: segments,
+                    parentSessionId: self.parentSessionId
                 )
             }
         }

@@ -2,6 +2,12 @@ import { WebSocket } from 'ws';
 import { SonioxService } from '../services/soniox.service';
 import { AIService } from '../services/ai.service';
 
+interface TranscriptWord {
+  word: string;
+  startTime: number;
+  endTime: number;
+}
+
 interface Session {
   id: string;
   transcript: string;
@@ -11,6 +17,7 @@ interface Session {
   clientWs: WebSocket;
   lastCaptionTime: number;
   sentFinalTexts: Set<string>;
+  words: TranscriptWord[];
 }
 
 export class TranscriptionController {
@@ -33,6 +40,7 @@ export class TranscriptionController {
       clientWs: ws,
       lastCaptionTime: 0,
       sentFinalTexts: new Set(),
+      words: [],
     };
 
     this.sessions.set(sessionId, session);
@@ -41,11 +49,22 @@ export class TranscriptionController {
       await sonioxService.connect();
 
       // Handle transcription from Soniox
-      sonioxService.onTranscript(async (text: string, isFinal: boolean) => {
+      sonioxService.onTranscript(async (text: string, isFinal: boolean, words?: TranscriptWord[]) => {
         // Clean the text - remove markers and trim
-        const cleanedText = text.replace(/<end>/gi, '').trim();
+        const cleanedText = text.replace(/<end>/gi, '').replace(/<\/end>/gi, '').trim();
 
         if (!cleanedText) return; // Skip empty text
+
+        // Clean words too
+        let cleanedWords = words;
+        if (words && words.length > 0) {
+          cleanedWords = words
+            .map(w => ({
+              ...w,
+              word: w.word.replace(/<end>/gi, '').replace(/<\/end>/gi, '').trim()
+            }))
+            .filter(w => w.word.length > 0); // Remove empty words
+        }
 
         // For final transcripts, check if we already sent this exact text
         if (isFinal) {
@@ -54,7 +73,12 @@ export class TranscriptionController {
             return; // Skip duplicate
           }
           session.sentFinalTexts.add(cleanedText);
-          session.transcript += cleanedText + ' ';
+          session.transcript = cleanedText; // Use cleaned text directly, not append
+
+          // Store word-level timestamps
+          if (cleanedWords && cleanedWords.length > 0) {
+            session.words = cleanedWords;
+          }
         }
 
         // Send transcript to client
@@ -62,6 +86,7 @@ export class TranscriptionController {
           type: 'transcript',
           text: cleanedText,
           isFinal,
+          words: isFinal ? cleanedWords : undefined, // Only send words with final transcripts
         }));
 
         // Generate real-time caption every 7 seconds
@@ -129,16 +154,34 @@ export class TranscriptionController {
     const duration = (Date.now() - session.startTime) / 1000;
 
     try {
-      // Generate AI analysis from the full transcript
-      const analysis = await this.aiService.analyzeSession(
-        session.transcript.trim(),
-        duration
-      );
+      // Generate AI analysis and title from the full transcript
+      // Clean any remaining markers
+      const transcript = session.transcript
+        .replace(/<end>/gi, '')
+        .replace(/<\/end>/gi, '')
+        .trim();
 
-      // Send analysis to client
+      if (!transcript) {
+        console.log('No transcript to analyze');
+        return;
+      }
+
+      const [analysis, title] = await Promise.all([
+        this.aiService.analyzeSession(transcript, duration),
+        this.aiService.generateSessionTitle(transcript),
+      ]);
+
+      // Add title to analysis
+      const analysisWithTitle = {
+        ...analysis,
+        title,
+      };
+
+      // Send analysis to client with word-level timestamps
       session.clientWs.send(JSON.stringify({
         type: 'analysis',
-        data: analysis,
+        data: analysisWithTitle,
+        words: session.words, // Include word-level timestamps
       }));
     } catch (error) {
       console.error('AI analysis failed:', error);
@@ -157,6 +200,7 @@ export class TranscriptionController {
             missingPoints: [],
           },
           followUpQuestion: 'What did you learn from this session?',
+          title: 'Learning Session',
         },
       }));
     }

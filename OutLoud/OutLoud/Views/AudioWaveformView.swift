@@ -8,64 +8,19 @@ struct AudioWaveformView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            ZStack {
-                // Ambient glow
-                RoundedRectangle(cornerRadius: geometry.size.height / 2)
-                    .fill(LinearGradient(
-                        colors: backgroundColors,
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                    .opacity(isRecording ? 0.45 : 0.2)
-                    .blur(radius: 14)
-
-                // Waveform bars
-                HStack(alignment: .center, spacing: geometry.size.width / CGFloat(barCount * 6)) {
-                    ForEach(0..<barCount, id: \.self) { index in
-                        Capsule()
-                            .fill(LinearGradient(
-                                colors: barGradient,
-                                startPoint: .top,
-                                endPoint: .bottom
-                            ))
-                            .frame(
-                                width: max(CGFloat(3), geometry.size.width / (CGFloat(barCount) * 1.6)),
-                                height: barHeight(for: index, in: geometry.size)
-                            )
-                            .opacity(isRecording ? 0.95 : 0.4)
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .animation(.easeOut(duration: 0.18), value: audioLevel)
-
-                // Outline for definition
-                RoundedRectangle(cornerRadius: geometry.size.height / 2)
-                    .strokeBorder(Color.white.opacity(isRecording ? 0.15 : 0.05), lineWidth: 1)
-            }
-        }
-        .frame(height: isRecording ? 88 : 64)
-        .overlay(alignment: .top) {
-            VStack(spacing: 6) {
-                if isRecording {
-                    Text(volumeEmphasis)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(Color.white.opacity(0.85))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.black.opacity(0.3))
-                        .clipShape(Capsule())
-                        .transition(.opacity)
-                } else {
-                    Text("Mic paused")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+            HStack(alignment: .center, spacing: 4) {
+                ForEach(0..<barCount, id: \.self) { index in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(barColor)
+                        .frame(
+                            width: 3,
+                            height: barHeight(for: index, in: geometry.size)
+                        )
+                        .animation(.easeOut(duration: 0.15), value: audioLevel)
                 }
             }
-            .padding(.top, isRecording ? 12 : 0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .padding(.horizontal, isRecording ? 4 : 12)
-        .padding(.vertical, 12)
     }
 
     private func barHeight(for index: Int, in size: CGSize) -> CGFloat {
@@ -79,36 +34,8 @@ struct AudioWaveformView: View {
         return max(minHeight, dynamicHeight)
     }
 
-    private var backgroundColors: [Color] {
-        if isRecording {
-            return [Color(red: 0.35, green: 0.45, blue: 0.95), Color(red: 0.2, green: 0.85, blue: 0.75)]
-        }
-        return [Color(.systemGray6), Color(.systemGray5)]
-    }
-
-    private var barGradient: [Color] {
-        if isRecording {
-            return [
-                Color.white.opacity(0.95),
-                Color(red: 0.4, green: 0.7, blue: 0.95)
-            ]
-        }
-        return [Color(.systemGray4), Color(.systemGray5)]
-    }
-
-    private var volumeEmphasis: String {
-        switch audioLevel {
-        case _ where audioLevel > 0.75:
-            return "Crystal clear"
-        case _ where audioLevel > 0.45:
-            return "Great energy"
-        case _ where audioLevel > 0.18:
-            return "Keep talking"
-        case _ where audioLevel > 0.05:
-            return "Lean closer"
-        default:
-            return "Awaiting voice"
-        }
+    private var barColor: Color {
+        isRecording ? Color(red: 0.32, green: 0.45, blue: 0.91) : Color.gray.opacity(0.3)
     }
 }
 

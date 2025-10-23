@@ -11,15 +11,30 @@ interface SonioxConfig {
   num_channels: number;
 }
 
+interface TranscriptWord {
+  word: string;
+  startTime: number; // in seconds
+  endTime: number;
+}
+
+interface TranscriptSegment {
+  text: string;
+  words: TranscriptWord[];
+  startTime: number;
+  endTime: number;
+}
+
 export class SonioxService {
   private ws: WebSocket | null = null;
-  private onTranscriptCallback: ((text: string, isFinal: boolean) => void) | null = null;
+  private onTranscriptCallback: ((text: string, isFinal: boolean, words?: TranscriptWord[]) => void) | null = null;
   private onEndpointCallback: (() => void) | null = null;
   private finalTranscript: string = ''; // Accumulated final tokens
+  private allWords: TranscriptWord[] = []; // Accumulated word-level timestamps
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.finalTranscript = ''; // Reset on new connection
+      this.allWords = []; // Reset word timestamps
       this.ws = new WebSocket(config.soniox.wsUrl);
 
       this.ws.on('open', () => {
@@ -56,22 +71,36 @@ export class SonioxService {
           if (message.tokens && message.tokens.length > 0) {
             let finalTokens = '';
             let nonFinalTokens = '';
+            const finalSubwords: Array<{text: string, start_ms: number, end_ms: number}> = [];
 
             // Separate final and non-final tokens
             for (const token of message.tokens) {
               if (token.text) {
                 if (token.is_final) {
                   finalTokens += token.text;
+
+                  // Collect subwords with timestamps
+                  if (token.start_ms !== undefined && token.end_ms !== undefined) {
+                    finalSubwords.push({
+                      text: token.text,
+                      start_ms: token.start_ms,
+                      end_ms: token.end_ms,
+                    });
+                  }
                 } else {
                   nonFinalTokens += token.text;
                 }
               }
             }
 
+            // Merge subwords into full words
+            const finalWords = this.mergeSubwordsIntoWords(finalSubwords);
+
             // Handle final tokens - append to accumulated transcript
             if (finalTokens && this.onTranscriptCallback) {
               this.finalTranscript += finalTokens;
-              this.onTranscriptCallback(this.finalTranscript, true);
+              this.allWords.push(...finalWords);
+              this.onTranscriptCallback(this.finalTranscript, true, this.allWords);
             }
 
             // Handle non-final tokens - send as preview (will be replaced)
@@ -122,11 +151,61 @@ export class SonioxService {
     }
   }
 
-  onTranscript(callback: (text: string, isFinal: boolean) => void): void {
+  onTranscript(callback: (text: string, isFinal: boolean, words?: TranscriptWord[]) => void): void {
     this.onTranscriptCallback = callback;
+  }
+
+  getWords(): TranscriptWord[] {
+    return this.allWords;
   }
 
   onEndpoint(callback: () => void): void {
     this.onEndpointCallback = callback;
+  }
+
+  private mergeSubwordsIntoWords(subwords: Array<{text: string, start_ms: number, end_ms: number}>): TranscriptWord[] {
+    if (subwords.length === 0) return [];
+
+    const words: TranscriptWord[] = [];
+    let currentWord = '';
+    let currentStartMs = subwords[0].start_ms;
+    let currentEndMs = subwords[0].end_ms;
+
+    for (let i = 0; i < subwords.length; i++) {
+      const subword = subwords[i];
+      const text = subword.text;
+
+      // Check if this subword starts a new word (has leading space or punctuation)
+      const startsNewWord = text.startsWith(' ') || /^[.,!?;:]/.test(text);
+
+      if (startsNewWord && currentWord.length > 0) {
+        // Save the current word
+        words.push({
+          word: currentWord.trim(),
+          startTime: currentStartMs / 1000,
+          endTime: currentEndMs / 1000,
+        });
+
+        // Start a new word
+        currentWord = text;
+        currentStartMs = subword.start_ms;
+        currentEndMs = subword.end_ms;
+      } else {
+        // Continue building the current word
+        currentWord += text;
+        currentEndMs = subword.end_ms;
+      }
+    }
+
+    // Don't forget the last word
+    if (currentWord.length > 0) {
+      words.push({
+        word: currentWord.trim(),
+        startTime: currentStartMs / 1000,
+        endTime: currentEndMs / 1000,
+      });
+    }
+
+    return words;
   }
 }

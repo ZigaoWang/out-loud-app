@@ -1,7 +1,7 @@
 import SwiftUI
 import AVFoundation
 
-private enum DashboardTheme {
+enum DashboardTheme {
     static let primary = Color(red: 0.32, green: 0.45, blue: 0.91)
     static let secondary = Color(red: 0.31, green: 0.68, blue: 0.59)
     static let accent = Color(red: 0.88, green: 0.54, blue: 0.32)
@@ -15,7 +15,6 @@ private enum DashboardTheme {
 struct DashboardView: View {
     @StateObject private var sessionManager = SessionManager.shared
     @State private var navigateToSession = false
-    @State private var selectedSession: SavedSession?
 
     var body: some View {
         NavigationView {
@@ -43,13 +42,6 @@ struct DashboardView: View {
                     isActive: $navigateToSession
                 ) {
                     EmptyView()
-                }
-
-                if let session = selectedSession {
-                    SessionDetailView(session: session, isPresented: Binding(
-                        get: { selectedSession != nil },
-                        set: { if !$0 { selectedSession = nil } }
-                    ))
                 }
             }
             .navigationBarHidden(true)
@@ -133,10 +125,10 @@ struct DashboardView: View {
 
             VStack(spacing: 12) {
                 ForEach(sessionManager.savedSessions.prefix(10)) { session in
-                    SessionRow(session: session)
-                        .onTapGesture {
-                            selectedSession = session
-                        }
+                    NavigationLink(destination: SessionDetailView(session: session, isPresented: .constant(true))) {
+                        SessionRow(session: session)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
         }
@@ -184,26 +176,34 @@ struct SessionRow: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(DashboardTheme.primary.opacity(0.1))
-                    .frame(width: 48, height: 48)
-
-                Image(systemName: "waveform")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(DashboardTheme.primary)
-            }
-
             // Content
             VStack(alignment: .leading, spacing: 4) {
-                Text(session.formattedDate)
+                Text(session.displayTitle)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(DashboardTheme.textPrimary)
+                    .lineLimit(1)
 
-                Text(session.formattedDuration)
-                    .font(.subheadline)
-                    .foregroundColor(DashboardTheme.textSecondary)
+                HStack(spacing: 8) {
+                    Text(session.formattedDate)
+                        .font(.caption)
+                        .foregroundColor(DashboardTheme.textSecondary)
+
+                    Text("•")
+                        .foregroundColor(DashboardTheme.textTertiary)
+
+                    Text(session.formattedDuration)
+                        .font(.caption)
+                        .foregroundColor(DashboardTheme.textSecondary)
+
+                    if let followUpCount = session.followUpSessionIds?.count, followUpCount > 0 {
+                        Text("•")
+                            .foregroundColor(DashboardTheme.textTertiary)
+
+                        Text("+\(followUpCount)")
+                            .font(.caption)
+                            .foregroundColor(DashboardTheme.secondary)
+                    }
+                }
             }
 
             Spacer()
@@ -219,183 +219,6 @@ struct SessionRow: View {
     }
 }
 
-// MARK: - Session Detail View
-
-struct SessionDetailView: View {
-    let session: SavedSession
-    @Binding var isPresented: Bool
-    @State private var audioPlayer: AVAudioPlayer?
-    @State private var isPlaying = false
-    @State private var currentTime: TimeInterval = 0
-    @State private var timer: Timer?
-
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    stopPlayback()
-                    isPresented = false
-                }
-
-            VStack(spacing: 0) {
-                Spacer()
-
-                VStack(alignment: .leading, spacing: 24) {
-                    // Header
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(session.formattedDate)
-                                .font(.headline)
-                                .foregroundColor(DashboardTheme.textPrimary)
-
-                            Text(session.formattedDuration)
-                                .font(.subheadline)
-                                .foregroundColor(DashboardTheme.textSecondary)
-                        }
-
-                        Spacer()
-
-                        Button(action: {
-                            stopPlayback()
-                            isPresented = false
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title2)
-                                .foregroundColor(DashboardTheme.textTertiary)
-                        }
-                    }
-
-                    // Audio Player
-                    if session.audioFileName != nil {
-                        audioPlayerSection
-                    }
-
-                    Divider()
-
-                    // Transcript
-                    ScrollView {
-                        Text(session.transcript)
-                            .font(.body)
-                            .foregroundColor(DashboardTheme.textPrimary)
-                            .lineSpacing(6)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .frame(maxHeight: 300)
-                }
-                .padding(24)
-                .background(DashboardTheme.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 24))
-                .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 40)
-            }
-        }
-        .onDisappear {
-            stopPlayback()
-        }
-    }
-
-    private var audioPlayerSection: some View {
-        VStack(spacing: 16) {
-            // Progress bar
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Rectangle()
-                        .fill(DashboardTheme.surfaceSecondary)
-                        .frame(height: 4)
-                        .clipShape(Capsule())
-
-                    Rectangle()
-                        .fill(DashboardTheme.primary)
-                        .frame(width: geometry.size.width * progress, height: 4)
-                        .clipShape(Capsule())
-                }
-            }
-            .frame(height: 4)
-
-            // Controls
-            HStack {
-                Text(formatTime(currentTime))
-                    .font(.caption)
-                    .foregroundColor(DashboardTheme.textSecondary)
-
-                Spacer()
-
-                Button(action: togglePlayback) {
-                    Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 48))
-                        .foregroundColor(DashboardTheme.primary)
-                }
-
-                Spacer()
-
-                Text(formatTime(session.duration))
-                    .font(.caption)
-                    .foregroundColor(DashboardTheme.textSecondary)
-            }
-        }
-        .padding(16)
-        .background(DashboardTheme.surfaceSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-
-    private var progress: CGFloat {
-        guard session.duration > 0 else { return 0 }
-        return CGFloat(currentTime / session.duration)
-    }
-
-    private func togglePlayback() {
-        if isPlaying {
-            audioPlayer?.pause()
-            timer?.invalidate()
-            isPlaying = false
-        } else {
-            if audioPlayer == nil {
-                setupAudioPlayer()
-            }
-            audioPlayer?.play()
-            startTimer()
-            isPlaying = true
-        }
-    }
-
-    private func stopPlayback() {
-        audioPlayer?.stop()
-        timer?.invalidate()
-        isPlaying = false
-        currentTime = 0
-    }
-
-    private func setupAudioPlayer() {
-        guard let audioURL = SessionManager.shared.getAudioURL(for: session) else { return }
-
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
-            audioPlayer?.prepareToPlay()
-        } catch {
-            print("Failed to setup audio player: \(error)")
-        }
-    }
-
-    private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            if let player = audioPlayer {
-                currentTime = player.currentTime
-
-                if !player.isPlaying {
-                    stopPlayback()
-                }
-            }
-        }
-    }
-
-    private func formatTime(_ time: TimeInterval) -> String {
-        let minutes = Int(time) / 60
-        let seconds = Int(time) % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-}
 
 struct DashboardView_Previews: PreviewProvider {
     static var previews: some View {

@@ -170,4 +170,29 @@ Be supportive yet honest. Focus on growth and deeper understanding.`;
       return ''; // Fail silently, don't block the flow
     }
   }
+
+  async generateSessionTitle(transcript: string): Promise<string> {
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: config.openai.model,
+        messages: [
+          {
+            role: 'system',
+            content: 'Generate a concise, descriptive title (3-6 words) for this learning session. The title should capture the main topic or concept discussed. Use the same language as the transcript. Be specific and informative. Examples: "Understanding Neural Networks", "Photosynthesis Process Explained", "量子力学基础概念", "React Hooks深入理解".',
+          },
+          {
+            role: 'user',
+            content: `Generate a title for this session:\n\n${transcript.slice(0, 500)}`,
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 20,
+      });
+
+      return response.choices[0].message.content?.trim() || 'Learning Session';
+    } catch (error) {
+      console.error('Title generation error:', error);
+      return 'Learning Session';
+    }
+  }
 }

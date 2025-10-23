@@ -4,12 +4,13 @@ import Starscream
 class WebSocketService: WebSocketDelegate {
     private var socket: WebSocket?
     private let serverURL: String
+    private var transcriptWords: [TranscriptWord] = []
 
     var onConnected: (() -> Void)?
     var onTranscript: ((String, Bool) -> Void)?
     var onCaption: ((String) -> Void)?
     var onInteraction: ((String) -> Void)?
-    var onAnalysis: ((AnalysisResult) -> Void)?
+    var onAnalysis: ((AnalysisResult, [TranscriptWord]?) -> Void)?
     var onError: ((String) -> Void)?
 
     init(serverURL: String = "ws://localhost:3000") {
@@ -101,7 +102,21 @@ class WebSocketService: WebSocketDelegate {
         case "analysis":
             if let analysisData = json["data"] as? [String: Any] {
                 let analysis = parseAnalysis(analysisData)
-                onAnalysis?(analysis)
+
+                // Parse word-level timestamps if available
+                var words: [TranscriptWord]? = nil
+                if let wordsData = json["words"] as? [[String: Any]] {
+                    words = wordsData.compactMap { wordDict in
+                        guard let word = wordDict["word"] as? String,
+                              let startTime = wordDict["startTime"] as? Double,
+                              let endTime = wordDict["endTime"] as? Double else {
+                            return nil
+                        }
+                        return TranscriptWord(word: word, startTime: startTime, endTime: endTime)
+                    }
+                }
+
+                onAnalysis?(analysis, words)
             }
 
         case "error":
@@ -127,7 +142,8 @@ class WebSocketService: WebSocketDelegate {
                 coherenceScore: report?["coherenceScore"] as? Int ?? 0,
                 missingPoints: report?["missingPoints"] as? [String] ?? []
             ),
-            followUpQuestion: data["followUpQuestion"] as? String ?? ""
+            followUpQuestion: data["followUpQuestion"] as? String ?? "",
+            title: data["title"] as? String ?? nil
         )
     }
 }

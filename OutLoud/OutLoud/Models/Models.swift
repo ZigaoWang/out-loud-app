@@ -8,6 +8,7 @@ struct AnalysisResult: Codable {
     let feedback: String
     let report: Report
     let followUpQuestion: String
+    let title: String? // AI-generated session title
 }
 
 struct Report: Codable {
@@ -15,6 +16,21 @@ struct Report: Codable {
     let pauseTime: Int
     let coherenceScore: Int
     let missingPoints: [String]
+}
+
+// MARK: - Transcription Models
+
+struct TranscriptWord: Codable {
+    let word: String
+    let startTime: Double // in seconds
+    let endTime: Double
+}
+
+struct TranscriptSegment: Codable {
+    let text: String
+    let words: [TranscriptWord]
+    let startTime: Double
+    let endTime: Double
 }
 
 // MARK: - Session Models
@@ -49,11 +65,15 @@ struct Session {
 struct SavedSession: Codable, Identifiable {
     let id: String
     let transcript: String
+    let transcriptSegments: [TranscriptSegment]? // Word-level timestamps
     let startTime: Date
     let endTime: Date
     let duration: TimeInterval
     let audioFileName: String?
     let analysis: AnalysisResult?
+    let title: String? // AI-generated title
+    let parentSessionId: String? // For follow-up sessions
+    let followUpSessionIds: [String]? // Child sessions
 
     var formattedDate: String {
         let formatter = DateFormatter()
@@ -66,6 +86,15 @@ struct SavedSession: Codable, Identifiable {
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    var displayTitle: String {
+        title ?? "Session \(formattedDate)"
+    }
+
+    var totalDurationWithFollowUps: TimeInterval {
+        // This will be calculated when loading follow-ups
+        duration
     }
 }
 

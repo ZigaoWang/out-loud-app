@@ -31,8 +31,14 @@ private enum SessionTheme {
 }
 
 struct SessionView: View {
-    @StateObject private var viewModel = SessionViewModel()
+    let parentSessionId: String?
+    @StateObject private var viewModel: SessionViewModel
     @Environment(\.presentationMode) var presentationMode
+
+    init(parentSessionId: String? = nil) {
+        self.parentSessionId = parentSessionId
+        _viewModel = StateObject(wrappedValue: SessionViewModel(parentSessionId: parentSessionId))
+    }
 
     var body: some View {
         ZStack {
@@ -251,6 +257,7 @@ struct SessionView: View {
                 .font(.subheadline)
                 .foregroundColor(SessionTheme.textSecondary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SessionTheme.Spacing.xl)
         .background(SessionTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.xl))

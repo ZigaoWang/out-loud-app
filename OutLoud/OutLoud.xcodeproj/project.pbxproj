@@ -16,6 +16,9 @@
 		AA00000F0000000000000001 /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000100000000000000001 /* Starscream */; };
 		AA0000110000000000000002 /* AudioWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000120000000000000002 /* AudioWaveformView.swift */; };
 		AA0000130000000000000002 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000140000000000000002 /* SessionManager.swift */; };
+		AA0000180000000000000002 /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000150000000000000002 /* SessionDetailView.swift */; };
+		AA0000190000000000000002 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000160000000000000002 /* HomeView.swift */; };
+		AA00001A0000000000000002 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000170000000000000002 /* DashboardView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +32,9 @@
 		AA0000110000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA0000120000000000000002 /* AudioWaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioWaveformView.swift; sourceTree = "<group>"; };
 		AA0000140000000000000002 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
+		AA0000150000000000000002 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
+		AA0000160000000000000002 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		AA0000170000000000000002 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +109,9 @@
 			children = (
 				AA00000E0000000000000001 /* SessionView.swift */,
 				AA0000120000000000000002 /* AudioWaveformView.swift */,
+				AA0000150000000000000002 /* SessionDetailView.swift */,
+				AA0000160000000000000002 /* HomeView.swift */,
+				AA0000170000000000000002 /* DashboardView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -189,6 +198,9 @@
 				AA00000D0000000000000001 /* SessionView.swift in Sources */,
 				AA0000110000000000000002 /* AudioWaveformView.swift in Sources */,
 				AA0000130000000000000002 /* SessionManager.swift in Sources */,
+				AA0000180000000000000002 /* SessionDetailView.swift in Sources */,
+				AA0000190000000000000002 /* HomeView.swift in Sources */,
+				AA00001A0000000000000002 /* DashboardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
