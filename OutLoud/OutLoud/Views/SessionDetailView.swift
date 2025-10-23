@@ -11,6 +11,7 @@ struct SessionDetailView: View {
     @State private var isPlaying = false
     @State private var currentTime: Double = 0
     @State private var timer: Timer?
+    @State private var audioPlayerDelegate: AudioPlayerDelegateWrapper?
 
     private let theme = DashboardTheme.self
 
@@ -65,7 +66,7 @@ struct SessionDetailView: View {
 
                 Spacer()
 
-                Text(formatTime(session.duration))
+                Text(formatTime(audioPlayer?.duration ?? session.duration))
                     .font(.caption)
                     .foregroundColor(theme.textSecondary)
                     .monospacedDigit()
@@ -79,12 +80,13 @@ struct SessionDetailView: View {
                         .font(.title2)
                         .foregroundColor(theme.textPrimary)
                 }
+                .disabled(audioPlayer == nil)
 
                 // Play/Pause Button
                 Button(action: togglePlayback) {
                     ZStack {
                         Circle()
-                            .fill(theme.primary)
+                            .fill(audioPlayer == nil ? theme.textSecondary : theme.primary)
                             .frame(width: 60, height: 60)
 
                         Image(systemName: isPlaying ? "pause.fill" : "play.fill")
@@ -93,6 +95,7 @@ struct SessionDetailView: View {
                             .offset(x: isPlaying ? 0 : 2)
                     }
                 }
+                .disabled(audioPlayer == nil)
 
                 // Skip Forward 10s
                 Button(action: { skip(10) }) {
@@ -100,6 +103,7 @@ struct SessionDetailView: View {
                         .font(.title2)
                         .foregroundColor(theme.textPrimary)
                 }
+                .disabled(audioPlayer == nil)
             }
         }
         .padding(24)
@@ -125,6 +129,7 @@ struct SessionDetailView: View {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
+                        guard audioPlayer != nil else { return }
                         let newProgress = max(0, min(1, value.location.x / geometry.size.width))
                         seekTo(newProgress)
                     }
@@ -181,28 +186,42 @@ struct SessionDetailView: View {
                     .lineSpacing(8)
             }
         }
+        .animation(.easeInOut(duration: 0.1), value: currentTime)
     }
 
     private func buildWordHighlighting(for segment: TranscriptSegment) -> AttributedString {
         var result = AttributedString()
 
         for word in segment.words {
+            // Validate word has proper timestamps
+            guard word.startTime >= 0 && word.endTime > word.startTime else {
+                // Fallback for invalid timestamps
+                var wordText = AttributedString(word.word)
+                wordText.foregroundColor = theme.textPrimary
+                result.append(wordText)
+                result.append(AttributedString(" "))
+                continue
+            }
+
             var wordText = AttributedString(word.word)
 
-            // Check if this word is currently being spoken
-            let isCurrentWord = isPlaying && currentTime >= word.startTime && currentTime < word.endTime
-            let hasBeenSpoken = currentTime > word.endTime
+            // Calculate timing with tolerance
+            let tolerance: Double = 0.05 // 50ms tolerance
+            let isCurrentWord = isPlaying &&
+                                currentTime >= (word.startTime - tolerance) &&
+                                currentTime < (word.endTime + tolerance)
+            let hasBeenSpoken = currentTime >= (word.endTime - tolerance)
 
             if isCurrentWord {
-                // Highlight current word
+                // Highlight current word - bold, white text on blue background
                 wordText.foregroundColor = .white
                 wordText.backgroundColor = theme.primary
                 wordText.font = .body.bold()
             } else if hasBeenSpoken {
-                // Already spoken - dimmed
+                // Already spoken - dimmed gray
                 wordText.foregroundColor = theme.textSecondary
             } else {
-                // Not yet spoken
+                // Not yet spoken - normal black
                 wordText.foregroundColor = theme.textPrimary
             }
 
@@ -290,8 +309,8 @@ struct SessionDetailView: View {
     // MARK: - Audio Playback Logic
 
     private var progressPercentage: CGFloat {
-        guard session.duration > 0 else { return 0 }
-        return CGFloat(currentTime / session.duration)
+        guard let player = audioPlayer, player.duration > 0 else { return 0 }
+        return CGFloat(currentTime / player.duration)
     }
 
     private func setupAudioPlayer() {
@@ -311,6 +330,20 @@ struct SessionDetailView: View {
         if let attrs = try? FileManager.default.attributesOfItem(atPath: audioURL.path),
            let fileSize = attrs[.size] as? Int64 {
             print("📦 Audio file size: \(fileSize) bytes")
+
+            // Validate file size
+            guard fileSize > 1000 else {
+                print("❌ Audio file too small, likely corrupted")
+                return
+            }
+        }
+
+        // Debug: Print first few word timestamps
+        if let segments = session.transcriptSegments, let firstSegment = segments.first {
+            print("🎯 Word timestamps (first 5):")
+            for (index, word) in firstSegment.words.prefix(5).enumerated() {
+                print("   \(index + 1). \"\(word.word)\" [\(String(format: "%.2f", word.startTime))s - \(String(format: "%.2f", word.endTime))s]")
+            }
         }
 
         do {
@@ -324,7 +357,13 @@ struct SessionDetailView: View {
             audioPlayer?.prepareToPlay()
             audioPlayer?.volume = 1.0
 
-            print("✅ Audio player ready - Duration: \(audioPlayer?.duration ?? 0)s")
+            // Create and store delegate
+            audioPlayerDelegate = AudioPlayerDelegateWrapper(onFinish: { [self] in
+                self.handlePlaybackFinished()
+            })
+            audioPlayer?.delegate = audioPlayerDelegate
+
+            print("✅ Audio player ready - Duration: \(String(format: "%.2f", audioPlayer?.duration ?? 0))s")
         } catch {
             print("❌ Failed to setup audio player: \(error.localizedDescription)")
             print("❌ Error details: \(error)")
@@ -333,7 +372,7 @@ struct SessionDetailView: View {
 
     private func togglePlayback() {
         guard let player = audioPlayer else {
-            print("❌ No audio player available")
+            print("❌ No audio player available, attempting to setup...")
             setupAudioPlayer()
             return
         }
@@ -342,12 +381,25 @@ struct SessionDetailView: View {
             player.pause()
             stopTimer()
             isPlaying = false
-            print("⏸️ Paused at \(currentTime)s")
+            print("⏸️ Paused at \(String(format: "%.2f", currentTime))s")
         } else {
-            player.play()
-            startTimer()
-            isPlaying = true
-            print("▶️ Playing from \(currentTime)s")
+            // If at the end, restart from beginning
+            if currentTime >= player.duration - 0.1 {
+                player.currentTime = 0
+                currentTime = 0
+                print("🔄 Restarting from beginning")
+            }
+
+            let success = player.play()
+            if success {
+                startTimer()
+                isPlaying = true
+                print("▶️ Playing from \(String(format: "%.2f", currentTime))s")
+                print("   Volume: \(player.volume), Duration: \(String(format: "%.2f", player.duration))s")
+                print("   isPlaying: \(player.isPlaying)")
+            } else {
+                print("❌ Failed to start playback")
+            }
         }
     }
 
@@ -355,17 +407,38 @@ struct SessionDetailView: View {
         stopTimer() // Clean up any existing timer
 
         timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [self] _ in
-            guard let player = audioPlayer else { return }
+            guard let player = self.audioPlayer else { return }
 
-            currentTime = player.currentTime
+            // Update current time
+            let newTime = player.currentTime
+            DispatchQueue.main.async {
+                self.currentTime = newTime
+            }
 
-            // Auto-stop when finished
-            if player.currentTime >= player.duration {
-                togglePlayback()
+            // Debug: Print current word being highlighted (every 0.5s)
+            if Int(newTime * 10) % 5 == 0 {
+                if let segments = session.transcriptSegments, let firstSegment = segments.first {
+                    let currentWord = firstSegment.words.first(where: { word in
+                        newTime >= word.startTime && newTime < word.endTime
+                    })
+                    if let word = currentWord {
+                        print("⏱️ \(String(format: "%.2f", newTime))s: \"\(word.word)\" [\(String(format: "%.2f", word.startTime))s-\(String(format: "%.2f", word.endTime))s]")
+                    }
+                }
+            }
+
+            // Check if playback finished
+            if !player.isPlaying && player.currentTime > 0 {
+                DispatchQueue.main.async {
+                    self.handlePlaybackFinished()
+                }
             }
         }
 
-        RunLoop.main.add(timer!, forMode: .common)
+        // Ensure timer runs during UI interactions
+        if let timer = timer {
+            RunLoop.main.add(timer, forMode: .common)
+        }
     }
 
     private func stopTimer() {
@@ -373,12 +446,19 @@ struct SessionDetailView: View {
         timer = nil
     }
 
+    private func handlePlaybackFinished() {
+        print("🏁 Playback finished")
+        stopTimer()
+        isPlaying = false
+        // Keep currentTime at the end so user can see full transcript is highlighted
+    }
+
     private func seekTo(_ percentage: Double) {
         guard let player = audioPlayer else { return }
-        let newTime = session.duration * percentage
+        let newTime = player.duration * percentage
         player.currentTime = newTime
         currentTime = newTime
-        print("⏩ Seeked to \(newTime)s")
+        print("⏩ Seeked to \(String(format: "%.2f", newTime))s")
     }
 
     private func skip(_ seconds: Double) {
@@ -386,11 +466,13 @@ struct SessionDetailView: View {
         let newTime = max(0, min(player.duration, player.currentTime + seconds))
         player.currentTime = newTime
         currentTime = newTime
-        print("⏭️ Skipped to \(newTime)s")
+        print("⏭️ Skipped to \(String(format: "%.2f", newTime))s")
     }
 
     private func cleanup() {
         audioPlayer?.stop()
+        audioPlayer?.delegate = nil
+        audioPlayerDelegate = nil
         stopTimer()
         isPlaying = false
         currentTime = 0
@@ -401,5 +483,24 @@ struct SessionDetailView: View {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+// MARK: - AVAudioPlayer Delegate Helper
+
+private class AudioPlayerDelegateWrapper: NSObject, AVAudioPlayerDelegate {
+    let onFinish: () -> Void
+
+    init(onFinish: @escaping () -> Void) {
+        self.onFinish = onFinish
+    }
+
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        print("🎵 AVAudioPlayer finished playing, success: \(flag)")
+        onFinish()
+    }
+
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        print("❌ Audio player decode error: \(error?.localizedDescription ?? "unknown")")
     }
 }

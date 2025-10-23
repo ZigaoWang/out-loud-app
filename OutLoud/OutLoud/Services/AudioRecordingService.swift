@@ -94,11 +94,24 @@ class AudioRecordingService: NSObject {
         // Then remove tap
         inputNode?.removeTap(onBus: 0)
 
+        // IMPORTANT: Close the audio file to flush all data
+        audioFile = nil
+
         // Log the file info
         if let url = audioFileURL {
             let fileExists = FileManager.default.fileExists(atPath: url.path)
             let fileSize = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int64) ?? 0
             print("🎙️ Recording stopped - File: \(url.lastPathComponent), Exists: \(fileExists), Size: \(fileSize) bytes")
+
+            // Verify the audio file is valid
+            if fileSize > 0 {
+                do {
+                    let testPlayer = try AVAudioPlayer(contentsOf: url)
+                    print("✅ Audio file is valid - Duration: \(testPlayer.duration)s")
+                } catch {
+                    print("❌ Audio file validation failed: \(error)")
+                }
+            }
         }
 
         // Clean up
@@ -120,15 +133,30 @@ class AudioRecordingService: NSObject {
             return buffer
         }
 
-        converter.convert(to: convertedBuffer, error: &error, withInputFrom: inputBlock)
+        let status = converter.convert(to: convertedBuffer, error: &error, withInputFrom: inputBlock)
 
         if let error = error {
-            print("Audio conversion error: \(error)")
+            print("❌ Audio conversion error: \(error)")
+            return
+        }
+
+        if status == .error {
+            print("❌ Audio conversion failed")
+            return
+        }
+
+        // CRITICAL: Check if we actually got audio data
+        guard convertedBuffer.frameLength > 0 else {
+            print("⚠️ No audio frames in converted buffer")
             return
         }
 
         // Write to audio file
-        try? audioFile?.write(from: convertedBuffer)
+        do {
+            try audioFile?.write(from: convertedBuffer)
+        } catch {
+            print("❌ Failed to write audio: \(error)")
+        }
 
         guard let floatChannelData = convertedBuffer.floatChannelData else { return }
 

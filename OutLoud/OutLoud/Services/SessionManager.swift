@@ -74,7 +74,7 @@ class SessionManager: ObservableObject {
     private func updateParentSessionWithFollowUp(parentId: String, followUpId: String) {
         guard let index = savedSessions.firstIndex(where: { $0.id == parentId }) else { return }
 
-        var parent = savedSessions[index]
+        let parent = savedSessions[index]
         var followUps = parent.followUpSessionIds ?? []
         followUps.append(followUpId)
 

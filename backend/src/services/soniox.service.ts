@@ -79,7 +79,8 @@ export class SonioxService {
                 if (token.is_final) {
                   finalTokens += token.text;
 
-                  // Collect subwords with timestamps
+                  // Collect subwords with timestamps - NO offset needed!
+                  // Soniox timestamps are ALREADY relative to the audio stream
                   if (token.start_ms !== undefined && token.end_ms !== undefined) {
                     finalSubwords.push({
                       text: token.text,
@@ -167,6 +168,7 @@ export class SonioxService {
     if (subwords.length === 0) return [];
 
     const words: TranscriptWord[] = [];
+
     let currentWord = '';
     let currentStartMs = subwords[0].start_ms;
     let currentEndMs = subwords[0].end_ms;
@@ -175,35 +177,55 @@ export class SonioxService {
       const subword = subwords[i];
       const text = subword.text;
 
-      // Check if this subword starts a new word (has leading space or punctuation)
-      const startsNewWord = text.startsWith(' ') || /^[.,!?;:]/.test(text);
+      // Skip <end> markers
+      if (text.includes('<end>')) continue;
+
+      // Check if this subword starts a new word
+      // New word if: starts with space, is punctuation, or previous word ends with punctuation
+      const startsNewWord = /^[\s.,!?;:]/.test(text);
+      const isStandalonePunctuation = /^[.,!?;:]+$/.test(text.trim());
 
       if (startsNewWord && currentWord.length > 0) {
-        // Save the current word
-        words.push({
-          word: currentWord.trim(),
-          startTime: currentStartMs / 1000,
-          endTime: currentEndMs / 1000,
-        });
+        // Save the current word (cleaned)
+        const cleanWord = currentWord.trim();
+        if (cleanWord.length > 0) {
+          words.push({
+            word: cleanWord,
+            startTime: currentStartMs / 1000, // Convert to seconds - NO offset!
+            endTime: currentEndMs / 1000,
+          });
+        }
 
-        // Start a new word
-        currentWord = text;
+        // Start new word
+        currentWord = text.trim();
         currentStartMs = subword.start_ms;
         currentEndMs = subword.end_ms;
+      } else if (isStandalonePunctuation && currentWord.length > 0) {
+        // Attach punctuation to previous word
+        currentWord += text.trim();
+        currentEndMs = subword.end_ms;
       } else {
-        // Continue building the current word
+        // Continue building current word
         currentWord += text;
         currentEndMs = subword.end_ms;
       }
     }
 
-    // Don't forget the last word
-    if (currentWord.length > 0) {
+    // Save the last word
+    const cleanWord = currentWord.trim();
+    if (cleanWord.length > 0 && !cleanWord.includes('<end>')) {
       words.push({
-        word: currentWord.trim(),
+        word: cleanWord,
         startTime: currentStartMs / 1000,
         endTime: currentEndMs / 1000,
       });
+    }
+
+    // Log sample timestamps
+    if (words.length > 0) {
+      console.log(`📝 Word timestamps (no offset applied):`,
+        words.slice(0, 3).map(w => `"${w.word}" [${w.startTime.toFixed(2)}s - ${w.endTime.toFixed(2)}s]`).join(', ')
+      );
     }
 
     return words;
