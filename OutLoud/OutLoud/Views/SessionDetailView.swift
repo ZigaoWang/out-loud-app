@@ -45,10 +45,12 @@ struct SessionDetailView: View {
                         analysisCard(analysis)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, adaptivePadding)
                 .padding(.top, 20)
                 .padding(.bottom, 40)
+                .frame(maxWidth: 900)
             }
+            .frame(maxWidth: .infinity)
         }
         .navigationBarTitleDisplayMode(.large)
         .navigationTitle(currentSession.displayTitle)
@@ -523,6 +525,14 @@ struct SessionDetailView: View {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    private var adaptivePadding: CGFloat {
+        #if os(iOS)
+        return UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20
+        #else
+        return 40
+        #endif
     }
 }
 

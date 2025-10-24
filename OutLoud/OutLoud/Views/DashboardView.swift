@@ -32,10 +32,12 @@ struct DashboardView: View {
                             historySection
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, adaptivePadding)
                     .padding(.top, 20)
                     .padding(.bottom, 40)
+                    .frame(maxWidth: 800)
                 }
+                .frame(maxWidth: .infinity)
 
                 NavigationLink(
                     destination: SessionView(),
@@ -46,6 +48,15 @@ struct DashboardView: View {
             }
             .navigationBarHidden(true)
         }
+        .navigationViewStyle(.stack)
+    }
+
+    private var adaptivePadding: CGFloat {
+        #if os(iOS)
+        return UIDevice.current.userInterfaceIdiom == .pad ? 40 : 20
+        #else
+        return 40
+        #endif
     }
 
     // MARK: - Header

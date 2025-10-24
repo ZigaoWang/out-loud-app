@@ -46,35 +46,50 @@ struct SessionView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: SessionTheme.Spacing.xl) {
-                    headerSection
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: SessionTheme.Spacing.xl) {
+                        headerSection
 
-                    if viewModel.state == .preparing {
-                        preparingView
-                    } else if viewModel.state == .processing {
-                        processingView
-                    }
+                        if viewModel.state == .preparing {
+                            preparingView
+                        } else if viewModel.state == .processing {
+                            processingView
+                        }
 
-                    if hasTranscriptContent || viewModel.state == .recording {
-                        transcriptView
-                    } else if viewModel.state == .idle {
-                        idlePlaceholder
-                    }
+                        if hasTranscriptContent || viewModel.state == .recording {
+                            transcriptView
+                        } else if viewModel.state == .idle {
+                            idlePlaceholder
+                        }
 
-                    if viewModel.state == .completed, let analysis = viewModel.analysisResult {
-                        ScrollView(showsIndicators: false) {
+                        if viewModel.state == .completed, let analysis = viewModel.analysisResult {
                             analysisView(analysis)
                         }
                     }
-
-                    Spacer()
+                    .padding(.horizontal, adaptivePadding)
+                    .padding(.top, SessionTheme.Spacing.xxxl)
+                    .padding(.bottom, 120)
+                    .frame(maxWidth: 900)
                 }
-                .padding(.horizontal, SessionTheme.Spacing.xl)
-                .padding(.top, SessionTheme.Spacing.xxxl)
+                .frame(maxWidth: .infinity)
 
-                controlButton
-                    .padding(.horizontal, SessionTheme.Spacing.xl)
-                    .padding(.bottom, SessionTheme.Spacing.xxxl)
+                VStack {
+                    Spacer()
+                    controlButton
+                        .padding(.horizontal, adaptivePadding)
+                        .padding(.bottom, SessionTheme.Spacing.xl)
+                        .frame(maxWidth: 900)
+                }
+                .frame(maxWidth: .infinity)
+                .background(
+                    LinearGradient(
+                        colors: [SessionTheme.surfaceTertiary.opacity(0), SessionTheme.surfaceTertiary],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 120)
+                    .allowsHitTesting(false)
+                )
             }
 
             if let question = viewModel.interactionQuestion {
@@ -94,6 +109,14 @@ struct SessionView: View {
                 viewModel.startSession()
             }
         }
+    }
+
+    private var adaptivePadding: CGFloat {
+        #if os(iOS)
+        return UIDevice.current.userInterfaceIdiom == .pad ? 40 : 24
+        #else
+        return 40
+        #endif
     }
 
     // MARK: - Header & Status
