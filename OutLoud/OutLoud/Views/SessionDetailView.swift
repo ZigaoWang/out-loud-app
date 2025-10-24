@@ -228,9 +228,9 @@ struct SessionDetailView: View {
                 Text(buildWordHighlighting(for: segment))
                     .font(.body)
                     .lineSpacing(8)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .animation(.easeInOut(duration: 0.1), value: currentTime)
     }
 
     private func buildWordHighlighting(for segment: TranscriptSegment) -> AttributedString {
@@ -257,15 +257,11 @@ struct SessionDetailView: View {
             let hasBeenSpoken = currentTime >= (word.endTime - tolerance)
 
             if isCurrentWord {
-                // Highlight current word - bold, white text on blue background
                 wordText.foregroundColor = .white
                 wordText.backgroundColor = theme.primary
-                wordText.font = .body.bold()
             } else if hasBeenSpoken {
-                // Already spoken - dimmed gray
                 wordText.foregroundColor = theme.textSecondary
             } else {
-                // Not yet spoken - normal black
                 wordText.foregroundColor = theme.textPrimary
             }
 
