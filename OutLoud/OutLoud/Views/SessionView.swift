@@ -73,23 +73,18 @@ struct SessionView: View {
                 }
                 .frame(maxWidth: .infinity)
 
-                VStack {
-                    Spacer()
-                    controlButton
-                        .padding(.horizontal, adaptivePadding)
-                        .padding(.bottom, SessionTheme.Spacing.xl)
-                        .frame(maxWidth: 900)
-                }
-                .frame(maxWidth: .infinity)
-                .background(
-                    LinearGradient(
-                        colors: [SessionTheme.surfaceTertiary.opacity(0), SessionTheme.surfaceTertiary],
-                        startPoint: .top,
-                        endPoint: .bottom
+                controlButton
+                    .padding(.horizontal, adaptivePadding)
+                    .padding(.bottom, SessionTheme.Spacing.xl)
+                    .frame(maxWidth: 900)
+                    .background(
+                        LinearGradient(
+                            colors: [SessionTheme.surfaceTertiary.opacity(0), SessionTheme.surfaceTertiary],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .padding(.top, -60)
                     )
-                    .frame(height: 120)
-                    .allowsHitTesting(false)
-                )
             }
 
             if let question = viewModel.interactionQuestion {
@@ -311,7 +306,7 @@ struct SessionView: View {
                 }
                 .padding(.vertical, 1)
             }
-            .frame(maxHeight: .infinity)
+            .frame(minHeight: 200, maxHeight: 400)
             .onChange(of: viewModel.fullTranscript) { _ in
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     withAnimation(.easeOut(duration: 0.3)) {
