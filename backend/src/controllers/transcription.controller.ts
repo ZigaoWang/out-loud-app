@@ -15,7 +15,6 @@ interface Session {
   pauseTimes: number[];
   sonioxService: SonioxService;
   clientWs: WebSocket;
-  lastCaptionTime: number;
   sentFinalTexts: Set<string>;
   words: TranscriptWord[];
 }
@@ -38,7 +37,6 @@ export class TranscriptionController {
       pauseTimes: [],
       sonioxService,
       clientWs: ws,
-      lastCaptionTime: 0,
       sentFinalTexts: new Set(),
       words: [],
     };
@@ -88,26 +86,6 @@ export class TranscriptionController {
           isFinal,
           words: isFinal ? cleanedWords : undefined, // Only send words with final transcripts
         }));
-
-        // Generate real-time caption every 7 seconds
-        const now = Date.now();
-        const timeSinceLastCaption = (now - session.lastCaptionTime) / 1000;
-
-        if (timeSinceLastCaption >= 7 && session.transcript.length > 20) {
-          session.lastCaptionTime = now;
-
-          try {
-            const caption = await this.aiService.generateRealtimeCaption(session.transcript);
-            if (caption) {
-              ws.send(JSON.stringify({
-                type: 'caption',
-                text: caption,
-              }));
-            }
-          } catch (error) {
-            console.error('Caption generation failed:', error);
-          }
-        }
       });
 
       sonioxService.onEndpoint(() => {

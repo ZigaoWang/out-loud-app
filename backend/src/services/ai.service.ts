@@ -145,31 +145,6 @@ Be supportive yet honest. Focus on growth and deeper understanding.`;
     };
   }
 
-  async generateRealtimeCaption(partialTranscript: string): Promise<string> {
-    // Short, simple summaries - topic names only, no meta-language
-    try {
-      const response = await this.openai.chat.completions.create({
-        model: config.openai.model,
-        messages: [
-          {
-            role: 'system',
-            content: 'Extract the main topic in 2-4 words. Output ONLY the topic, no verbs, no descriptions. For Chinese: output in Chinese. For English: output in English. For mixed: use the dominant language. Never say "talking about", "discussing", "explaining", "clarifying", "fragmented". Examples: "机器学习算法", "牛顿第二定律", "React Hooks", "数据库设计".',
-          },
-          {
-            role: 'user',
-            content: partialTranscript,
-          },
-        ],
-        temperature: 0.2,
-        max_tokens: 10,
-      });
-
-      return response.choices[0].message.content?.trim() || '';
-    } catch (error) {
-      console.error('Caption generation error:', error);
-      return ''; // Fail silently, don't block the flow
-    }
-  }
 
   async generateSessionTitle(transcript: string): Promise<string> {
     try {
