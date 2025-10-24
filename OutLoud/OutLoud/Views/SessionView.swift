@@ -1,17 +1,17 @@
 import SwiftUI
 
 private enum SessionTheme {
-    static let primary = Color(red: 0.32, green: 0.45, blue: 0.91)
-    static let secondary = Color(red: 0.31, green: 0.68, blue: 0.59)
-    static let accent = Color(red: 0.88, green: 0.54, blue: 0.32)
-    static let recording = Color(red: 0.92, green: 0.26, blue: 0.3)
-    static let success = Color(red: 0.35, green: 0.68, blue: 0.48)
+    static let primary = Color.black
+    static let secondary = Color(red: 0.20, green: 0.78, blue: 0.35)
+    static let accent = Color.black
+    static let recording = Color(red: 0.95, green: 0.26, blue: 0.21)
+    static let success = Color(red: 0.20, green: 0.78, blue: 0.35)
     static let surface = Color(.systemBackground)
-    static let surfaceSecondary = Color(red: 0.97, green: 0.97, blue: 0.98)
-    static let surfaceTertiary = Color(red: 0.95, green: 0.95, blue: 0.96)
+    static let surfaceSecondary = Color(red: 0.98, green: 0.98, blue: 0.98)
+    static let surfaceTertiary = Color(red: 0.98, green: 0.98, blue: 0.98)
     static let textPrimary = Color.primary
     static let textSecondary = Color.secondary
-    static let textTertiary = Color(white: 0.55)
+    static let textTertiary = Color(white: 0.6)
 
     enum Spacing {
         static let xs: CGFloat = 4
@@ -119,36 +119,29 @@ struct SessionView: View {
     private var headerSection: some View {
         VStack(spacing: SessionTheme.Spacing.lg) {
             HStack(alignment: .center) {
-                Text("Out Loud")
-                    .font(.system(size: 32, weight: .semibold, design: .rounded))
-                    .foregroundColor(SessionTheme.textPrimary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Session")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(SessionTheme.textPrimary)
+
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(stateColor)
+                            .frame(width: 6, height: 6)
+
+                        Text(stateTitle)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(SessionTheme.textSecondary)
+                    }
+                }
 
                 Spacer()
 
                 if viewModel.state == .recording || viewModel.state == .preparing || viewModel.state == .processing {
                     Text(formattedElapsedTime)
-                        .font(.system(size: 36, weight: .light, design: .rounded))
+                        .font(.system(size: 32, weight: .medium, design: .rounded))
                         .foregroundColor(SessionTheme.textPrimary)
-                }
-            }
-
-            HStack(spacing: 12) {
-                Circle()
-                    .fill(stateColor)
-                    .frame(width: 6, height: 6)
-
-                Text(stateTitle)
-                    .font(.subheadline)
-                    .foregroundColor(SessionTheme.textSecondary)
-
-                Spacer()
-
-                if viewModel.state == .recording {
-                    AudioWaveformView(
-                        audioLevel: viewModel.audioLevel,
-                        isRecording: true
-                    )
-                    .frame(width: 60, height: 24)
+                        .monospacedDigit()
                 }
             }
         }
@@ -202,9 +195,9 @@ struct SessionView: View {
     private var stateColor: Color {
         switch viewModel.state {
         case .idle:
-            return SessionTheme.primary
+            return SessionTheme.textTertiary
         case .preparing:
-            return SessionTheme.secondary
+            return SessionTheme.primary
         case .recording:
             return SessionTheme.recording
         case .processing:
@@ -220,21 +213,24 @@ struct SessionView: View {
     private var preparingView: some View {
         VStack(alignment: .leading, spacing: SessionTheme.Spacing.md) {
             ProgressView()
-                .progressViewStyle(CircularProgressViewStyle(tint: SessionTheme.secondary))
+                .progressViewStyle(CircularProgressViewStyle(tint: SessionTheme.primary))
 
-            Text("Connecting session")
-                .font(.headline)
+            Text("Connecting")
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(SessionTheme.textPrimary)
 
-            Text("Warming up the mic and pairing with Soniox.")
-                .font(.subheadline)
+            Text("Setting up your session")
+                .font(.system(size: 15))
                 .foregroundColor(SessionTheme.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SessionTheme.Spacing.xl)
         .background(SessionTheme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.xl))
-        .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
+        .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.lg))
+        .overlay(
+            RoundedRectangle(cornerRadius: SessionTheme.Radius.lg)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+        )
     }
 
     private var processingView: some View {
@@ -242,19 +238,22 @@ struct SessionView: View {
             ProgressView()
                 .progressViewStyle(CircularProgressViewStyle(tint: SessionTheme.primary))
 
-            Text("Wrapping things up")
-                .font(.headline)
+            Text("Processing")
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(SessionTheme.textPrimary)
 
-            Text("We are cleaning the transcript and summarizing your session.")
-                .font(.subheadline)
+            Text("Analyzing your session")
+                .font(.system(size: 15))
                 .foregroundColor(SessionTheme.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SessionTheme.Spacing.xl)
         .background(SessionTheme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.xl))
-        .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
+        .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.lg))
+        .overlay(
+            RoundedRectangle(cornerRadius: SessionTheme.Radius.lg)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+        )
     }
 
     private var idlePlaceholder: some View {
@@ -483,18 +482,18 @@ struct SessionView: View {
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
                     Text(buttonTitle)
-                        .font(.body)
-                        .fontWeight(.medium)
+                        .font(.system(size: 16, weight: .semibold))
                 }
 
                 Spacer()
             }
-            .padding(.vertical, 16)
+            .padding(.vertical, 18)
             .foregroundColor(.white)
             .background(buttonColor)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .opacity((viewModel.state == .processing || viewModel.state == .preparing) ? 0.6 : 1.0)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .opacity((viewModel.state == .processing || viewModel.state == .preparing) ? 0.5 : 1.0)
         }
+        .buttonStyle(ScaleButtonStyle())
         .disabled(viewModel.state == .processing || viewModel.state == .preparing)
     }
 
@@ -533,13 +532,13 @@ struct SessionView: View {
         case .idle:
             return SessionTheme.primary
         case .preparing:
-            return SessionTheme.secondary
+            return SessionTheme.primary
         case .recording:
             return SessionTheme.recording
         case .processing:
-            return SessionTheme.textTertiary
+            return SessionTheme.primary
         case .completed:
-            return SessionTheme.success
+            return SessionTheme.primary
         }
     }
 
