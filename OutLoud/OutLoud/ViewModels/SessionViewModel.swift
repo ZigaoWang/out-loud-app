@@ -23,6 +23,8 @@ class SessionViewModel: ObservableObject {
     private let recordingPreparationDelay: TimeInterval = 0.6
     private let initialTranscriptIgnoreDuration: TimeInterval = 0.8
     private let parentSessionId: String?
+    private var lastCaptionTime: Date?
+    private var previousCaption: String = ""
 
     init(serverURL: String = "ws://localhost:3000", parentSessionId: String? = nil) {
         self.session = Session()
@@ -61,10 +63,7 @@ class SessionViewModel: ObservableObject {
         }
 
         webSocketService.onCaption = { [weak self] caption in
-            DispatchQueue.main.async {
-                self?.currentCaption = caption
-                self?.startCaptionStreamingEffect()
-            }
+            // Disabled for now
         }
 
         webSocketService.onInteraction = { [weak self] question in
@@ -157,29 +156,6 @@ class SessionViewModel: ObservableObject {
         webSocketService.disconnect()
     }
 
-    // MARK: - Streaming Caption Effect
-    private func startCaptionStreamingEffect() {
-        captionTimer?.invalidate()
-        displayedCaption = ""
-
-        let targetCaption = currentCaption
-        var currentIndex = 0
-
-        captionTimer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { [weak self] timer in
-            guard let self = self else {
-                timer.invalidate()
-                return
-            }
-
-            if currentIndex < targetCaption.count {
-                let index = targetCaption.index(targetCaption.startIndex, offsetBy: currentIndex)
-                self.displayedCaption = String(targetCaption[...index])
-                currentIndex += 1
-            } else {
-                timer.invalidate()
-            }
-        }
-    }
 
     // MARK: - Duration Timer
     private func startDurationTimer() {

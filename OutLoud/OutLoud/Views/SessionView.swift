@@ -46,35 +46,31 @@ struct SessionView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: SessionTheme.Spacing.xxxl) {
-                        headerSection
-                        stateSection
+                VStack(alignment: .leading, spacing: SessionTheme.Spacing.xl) {
+                    headerSection
 
-                        if viewModel.state == .preparing {
-                            preparingView
-                        } else if viewModel.state == .processing {
-                            processingView
-                        }
+                    if viewModel.state == .preparing {
+                        preparingView
+                    } else if viewModel.state == .processing {
+                        processingView
+                    }
 
-                        if viewModel.state == .recording {
-                            captureView
-                        }
+                    if hasTranscriptContent || viewModel.state == .recording {
+                        transcriptView
+                    } else if viewModel.state == .idle {
+                        idlePlaceholder
+                    }
 
-                        if hasTranscriptContent {
-                            transcriptView
-                        } else if viewModel.state == .idle {
-                            idlePlaceholder
-                        }
-
-                        if viewModel.state == .completed, let analysis = viewModel.analysisResult {
+                    if viewModel.state == .completed, let analysis = viewModel.analysisResult {
+                        ScrollView(showsIndicators: false) {
                             analysisView(analysis)
                         }
                     }
-                    .padding(.horizontal, SessionTheme.Spacing.xl)
-                    .padding(.top, SessionTheme.Spacing.xxxl)
-                    .padding(.bottom, SessionTheme.Spacing.xxxl * 2)
+
+                    Spacer()
                 }
+                .padding(.horizontal, SessionTheme.Spacing.xl)
+                .padding(.top, SessionTheme.Spacing.xxxl)
 
                 controlButton
                     .padding(.horizontal, SessionTheme.Spacing.xl)
@@ -103,57 +99,41 @@ struct SessionView: View {
     // MARK: - Header & Status
 
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: SessionTheme.Spacing.sm) {
-            Text("Out Loud")
-                .font(.system(size: 32, weight: .semibold, design: .rounded))
-                .foregroundColor(SessionTheme.textPrimary)
-
-            Text(stateSubtitle)
-                .font(.subheadline)
-                .foregroundColor(SessionTheme.textSecondary)
-        }
-    }
-
-    private var stateSection: some View {
-        HStack(spacing: SessionTheme.Spacing.sm) {
-            Circle()
-                .fill(stateColor)
-                .frame(width: 8, height: 8)
-                .shadow(color: stateColor.opacity(0.5), radius: 4, x: 0, y: 2)
-
-            Text(stateTitle)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundColor(stateColor)
-
-            Spacer()
-
-            if viewModel.state == .recording || viewModel.state == .preparing || viewModel.state == .processing {
-                Text(formattedElapsedTime)
-                    .font(.footnote)
-                    .fontWeight(.semibold)
+        VStack(spacing: SessionTheme.Spacing.lg) {
+            HStack(alignment: .center) {
+                Text("Out Loud")
+                    .font(.system(size: 32, weight: .semibold, design: .rounded))
                     .foregroundColor(SessionTheme.textPrimary)
-                    .padding(.horizontal, SessionTheme.Spacing.md)
-                    .padding(.vertical, SessionTheme.Spacing.xs)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [stateColor.opacity(0.15), stateColor.opacity(0.05)]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
+
+                Spacer()
+
+                if viewModel.state == .recording || viewModel.state == .preparing || viewModel.state == .processing {
+                    Text(formattedElapsedTime)
+                        .font(.system(size: 36, weight: .light, design: .rounded))
+                        .foregroundColor(SessionTheme.textPrimary)
+                }
+            }
+
+            HStack(spacing: 12) {
+                Circle()
+                    .fill(stateColor)
+                    .frame(width: 6, height: 6)
+
+                Text(stateTitle)
+                    .font(.subheadline)
+                    .foregroundColor(SessionTheme.textSecondary)
+
+                Spacer()
+
+                if viewModel.state == .recording {
+                    AudioWaveformView(
+                        audioLevel: viewModel.audioLevel,
+                        isRecording: true
                     )
-                    .clipShape(Capsule())
-            } else {
-                Text(stateHint)
-                    .font(.footnote)
-                    .foregroundColor(SessionTheme.textTertiary)
+                    .frame(width: 60, height: 24)
+                }
             }
         }
-        .padding(.horizontal, SessionTheme.Spacing.lg)
-        .padding(.vertical, SessionTheme.Spacing.md)
-        .background(SessionTheme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.lg))
-        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
     }
 
     private var stateTitle: String {
@@ -218,31 +198,6 @@ struct SessionView: View {
 
     // MARK: - Recording helpers
 
-    private var captureView: some View {
-        VStack(alignment: .leading, spacing: SessionTheme.Spacing.lg) {
-            if !viewModel.displayedCaption.isEmpty {
-                Text(viewModel.displayedCaption)
-                    .font(.callout)
-                    .fontWeight(.medium)
-                    .foregroundColor(SessionTheme.secondary)
-                    .padding(.horizontal, SessionTheme.Spacing.lg)
-                    .padding(.vertical, SessionTheme.Spacing.md)
-                    .background(SessionTheme.surfaceSecondary)
-                    .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.md))
-            }
-
-            AudioWaveformView(
-                audioLevel: viewModel.audioLevel,
-                isRecording: viewModel.state == .recording
-            )
-            .frame(height: 86)
-            .padding(.top, SessionTheme.Spacing.sm)
-        }
-        .padding(SessionTheme.Spacing.xl)
-        .background(SessionTheme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.xl))
-        .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
-    }
 
     private var preparingView: some View {
         VStack(alignment: .leading, spacing: SessionTheme.Spacing.md) {
@@ -284,19 +239,15 @@ struct SessionView: View {
     }
 
     private var idlePlaceholder: some View {
-        VStack(alignment: .leading, spacing: SessionTheme.Spacing.md) {
-            Text("No transcript yet")
-                .font(.headline)
-                .foregroundColor(SessionTheme.textPrimary)
-
-            Text("Hit start and speak freely. We will break everything into clean paragraphs automatically.")
-                .font(.subheadline)
+        VStack(spacing: SessionTheme.Spacing.md) {
+            Text("Start speaking to see transcript")
+                .font(.body)
                 .foregroundColor(SessionTheme.textSecondary)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .padding(SessionTheme.Spacing.xl)
         .background(SessionTheme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.xl))
-        .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
+        .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.lg))
     }
 
     // MARK: - Transcript
@@ -306,36 +257,49 @@ struct SessionView: View {
     }
 
     private var transcriptView: some View {
-        VStack(alignment: .leading, spacing: SessionTheme.Spacing.lg) {
-            HStack {
-                Text("Transcript")
-                    .font(.headline)
-                    .foregroundColor(SessionTheme.textPrimary)
+        ScrollViewReader { proxy in
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    if viewModel.fullTranscript.isEmpty {
+                        VStack(spacing: 8) {
+                            Text("Speak naturally")
+                                .font(.body)
+                                .fontWeight(.medium)
+                                .foregroundColor(SessionTheme.textPrimary)
 
-                Spacer()
+                            Text("Your transcript will appear here")
+                                .font(.subheadline)
+                                .foregroundColor(SessionTheme.textSecondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 60)
+                    } else {
+                        Text(viewModel.fullTranscript)
+                            .font(.body)
+                            .foregroundColor(SessionTheme.textPrimary)
+                            .lineSpacing(8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                    }
 
-                if viewModel.state == .recording {
-                    Text("Live")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(SessionTheme.recording)
-                        .padding(.horizontal, SessionTheme.Spacing.md)
-                        .padding(.vertical, SessionTheme.Spacing.xs)
-                        .background(SessionTheme.recording.opacity(0.08))
-                        .clipShape(Capsule())
+                    Color.clear
+                        .frame(height: 1)
+                        .id("bottom")
+                }
+                .padding(.vertical, 1)
+            }
+            .frame(maxHeight: .infinity)
+            .onChange(of: viewModel.fullTranscript) { _ in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        proxy.scrollTo("bottom", anchor: .bottom)
+                    }
                 }
             }
-
-            Text(viewModel.fullTranscript)
-                .font(.body)
-                .foregroundColor(SessionTheme.textPrimary)
-                .lineSpacing(6)
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(SessionTheme.Spacing.xl)
         .background(SessionTheme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.xl))
-        .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
+        .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.lg))
     }
 
     // MARK: - Analysis
@@ -500,25 +464,17 @@ struct SessionView: View {
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
                     Text(buttonTitle)
-                        .font(.headline)
-                        .fontWeight(.semibold)
+                        .font(.body)
+                        .fontWeight(.medium)
                 }
 
                 Spacer()
             }
-            .padding(.vertical, SessionTheme.Spacing.lg)
+            .padding(.vertical, 16)
             .foregroundColor(.white)
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: [buttonColor, buttonColor.opacity(0.85)]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.lg))
-            .shadow(color: buttonColor.opacity(0.4), radius: 12, x: 0, y: 6)
-            .opacity((viewModel.state == .processing || viewModel.state == .preparing) ? 0.7 : 1.0)
-            .scaleEffect((viewModel.state == .processing || viewModel.state == .preparing) ? 0.98 : 1.0)
+            .background(buttonColor)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .opacity((viewModel.state == .processing || viewModel.state == .preparing) ? 0.6 : 1.0)
         }
         .disabled(viewModel.state == .processing || viewModel.state == .preparing)
     }
