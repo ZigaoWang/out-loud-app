@@ -119,6 +119,7 @@ struct SessionView: View {
             Circle()
                 .fill(stateColor)
                 .frame(width: 8, height: 8)
+                .shadow(color: stateColor.opacity(0.5), radius: 4, x: 0, y: 2)
 
             Text(stateTitle)
                 .font(.subheadline)
@@ -134,7 +135,13 @@ struct SessionView: View {
                     .foregroundColor(SessionTheme.textPrimary)
                     .padding(.horizontal, SessionTheme.Spacing.md)
                     .padding(.vertical, SessionTheme.Spacing.xs)
-                    .background(SessionTheme.surfaceSecondary)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [stateColor.opacity(0.15), stateColor.opacity(0.05)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
                     .clipShape(Capsule())
             } else {
                 Text(stateHint)
@@ -144,8 +151,9 @@ struct SessionView: View {
         }
         .padding(.horizontal, SessionTheme.Spacing.lg)
         .padding(.vertical, SessionTheme.Spacing.md)
-        .background(SessionTheme.surfaceSecondary)
+        .background(SessionTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.lg))
+        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
     }
 
     private var stateTitle: String {
@@ -500,9 +508,17 @@ struct SessionView: View {
             }
             .padding(.vertical, SessionTheme.Spacing.lg)
             .foregroundColor(.white)
-            .background(buttonColor)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [buttonColor, buttonColor.opacity(0.85)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
             .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.lg))
+            .shadow(color: buttonColor.opacity(0.4), radius: 12, x: 0, y: 6)
             .opacity((viewModel.state == .processing || viewModel.state == .preparing) ? 0.7 : 1.0)
+            .scaleEffect((viewModel.state == .processing || viewModel.state == .preparing) ? 0.98 : 1.0)
         }
         .disabled(viewModel.state == .processing || viewModel.state == .preparing)
     }

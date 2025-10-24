@@ -153,9 +153,15 @@ struct StatCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: icon)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(color)
+                ZStack {
+                    Circle()
+                        .fill(color.opacity(0.15))
+                        .frame(width: 40, height: 40)
+
+                    Image(systemName: icon)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(color)
+                }
 
                 Spacer()
             }
@@ -170,9 +176,15 @@ struct StatCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(DashboardTheme.surface)
+        .background(
+            LinearGradient(
+                gradient: Gradient(colors: [DashboardTheme.surface, DashboardTheme.surface.opacity(0.95)]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
+        .shadow(color: Color.black.opacity(0.06), radius: 12, x: 0, y: 4)
     }
 }
 
@@ -183,6 +195,17 @@ struct SessionRow: View {
 
     var body: some View {
         HStack(spacing: 16) {
+            // Icon
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(DashboardTheme.primary.opacity(0.1))
+                    .frame(width: 48, height: 48)
+
+                Image(systemName: "waveform")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(DashboardTheme.primary)
+            }
+
             // Content
             VStack(alignment: .leading, spacing: 4) {
                 Text(session.displayTitle)
@@ -208,6 +231,7 @@ struct SessionRow: View {
 
                         Text("+\(followUpCount)")
                             .font(.caption)
+                            .fontWeight(.semibold)
                             .foregroundColor(DashboardTheme.secondary)
                     }
                 }
@@ -216,13 +240,13 @@ struct SessionRow: View {
             Spacer()
 
             Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(DashboardTheme.textTertiary)
         }
         .padding(16)
         .background(DashboardTheme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 3)
     }
 }
 
