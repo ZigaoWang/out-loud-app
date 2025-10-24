@@ -10,11 +10,13 @@ class SessionViewModel: ObservableObject {
     @Published var analysisResult: AnalysisResult?
     @Published var errorMessage: String?
     @Published var audioLevel: Float = 0.0
+    @Published var elapsedTime: TimeInterval = 0
 
     private var session: Session
     private let audioService: AudioRecordingService
     private let webSocketService: WebSocketService
     private var captionTimer: Timer?
+    private var durationTimer: Timer?
     private var recordingPreparationWorkItem: DispatchWorkItem?
     private var ignoreInitialTranscriptWorkItem: DispatchWorkItem?
     private var isIgnoringInitialTranscript = false
@@ -112,8 +114,10 @@ class SessionViewModel: ObservableObject {
     func startSession() {
         state = .preparing
         session.startTime = Date()
+        elapsedTime = 0
         fullTranscript = ""
         isIgnoringInitialTranscript = true
+        startDurationTimer()
         webSocketService.connect(sessionId: session.id)
     }
 
@@ -125,6 +129,7 @@ class SessionViewModel: ObservableObject {
         recordingPreparationWorkItem?.cancel()
         ignoreInitialTranscriptWorkItem?.cancel()
         isIgnoringInitialTranscript = false
+        stopDurationTimer()
         audioService.stopRecording()
         webSocketService.endSession()
     }
@@ -141,9 +146,11 @@ class SessionViewModel: ObservableObject {
         interactionQuestion = nil
         analysisResult = nil
         errorMessage = nil
+        elapsedTime = 0
         session = Session()
         captionTimer?.invalidate()
         captionTimer = nil
+        stopDurationTimer()
         recordingPreparationWorkItem?.cancel()
         ignoreInitialTranscriptWorkItem?.cancel()
         isIgnoringInitialTranscript = false
@@ -174,8 +181,23 @@ class SessionViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Duration Timer
+    private func startDurationTimer() {
+        stopDurationTimer()
+        durationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            self.elapsedTime = Date().timeIntervalSince(self.session.startTime)
+        }
+    }
+
+    private func stopDurationTimer() {
+        durationTimer?.invalidate()
+        durationTimer = nil
+    }
+
     deinit {
         captionTimer?.invalidate()
+        durationTimer?.invalidate()
         webSocketService.disconnect()
         audioService.stopRecording()
         recordingPreparationWorkItem?.cancel()

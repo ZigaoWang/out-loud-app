@@ -127,9 +127,20 @@ struct SessionView: View {
 
             Spacer()
 
-            Text(stateHint)
-                .font(.footnote)
-                .foregroundColor(SessionTheme.textTertiary)
+            if viewModel.state == .recording || viewModel.state == .preparing || viewModel.state == .processing {
+                Text(formattedElapsedTime)
+                    .font(.footnote)
+                    .fontWeight(.semibold)
+                    .foregroundColor(SessionTheme.textPrimary)
+                    .padding(.horizontal, SessionTheme.Spacing.md)
+                    .padding(.vertical, SessionTheme.Spacing.xs)
+                    .background(SessionTheme.surfaceSecondary)
+                    .clipShape(Capsule())
+            } else {
+                Text(stateHint)
+                    .font(.footnote)
+                    .foregroundColor(SessionTheme.textTertiary)
+            }
         }
         .padding(.horizontal, SessionTheme.Spacing.lg)
         .padding(.vertical, SessionTheme.Spacing.md)
@@ -684,6 +695,12 @@ struct SessionView: View {
         text
             .lowercased()
             .trimmingCharacters(in: CharacterSet(charactersIn: " .!?,;:\n\t"))
+    }
+
+    private var formattedElapsedTime: String {
+        let minutes = Int(viewModel.elapsedTime) / 60
+        let seconds = Int(viewModel.elapsedTime) % 60
+        return String(format: "%d:%02d", minutes, seconds)
     }
 }
 
