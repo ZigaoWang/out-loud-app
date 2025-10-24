@@ -230,6 +230,7 @@ struct SessionView: View {
                 .font(.subheadline)
                 .foregroundColor(SessionTheme.textSecondary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SessionTheme.Spacing.xl)
         .background(SessionTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.xl))
