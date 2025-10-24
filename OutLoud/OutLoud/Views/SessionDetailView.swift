@@ -21,6 +21,10 @@ struct SessionDetailView: View {
 
     private let theme = DashboardTheme.self
 
+    private var currentSession: SavedSession {
+        sessionManager.savedSessions.first(where: { $0.id == session.id }) ?? session
+    }
+
     var body: some View {
         ZStack {
             theme.surfaceSecondary
@@ -29,7 +33,7 @@ struct SessionDetailView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     // Audio Player Section
-                    if session.audioFileName != nil {
+                    if currentSession.audioFileName != nil {
                         audioPlayerCard
                     }
 
@@ -37,7 +41,7 @@ struct SessionDetailView: View {
                     transcriptCard
 
                     // Analysis Section
-                    if let analysis = session.analysis {
+                    if let analysis = currentSession.analysis {
                         analysisCard(analysis)
                     }
                 }
@@ -47,11 +51,11 @@ struct SessionDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.large)
-        .navigationTitle(session.displayTitle)
+        .navigationTitle(currentSession.displayTitle)
         .toolbar {
             Menu {
                 Button {
-                    editedTitle = session.title ?? ""
+                    editedTitle = currentSession.title ?? ""
                     isEditingTitle = true
                 } label: {
                     Label("Edit Title", systemImage: "pencil")
@@ -70,13 +74,13 @@ struct SessionDetailView: View {
             TextField("Title", text: $editedTitle)
             Button("Cancel", role: .cancel) { }
             Button("Save") {
-                sessionManager.updateSessionTitle(session, newTitle: editedTitle)
+                sessionManager.updateSessionTitle(currentSession, newTitle: editedTitle)
             }
         }
         .alert("Delete Session", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
-                sessionManager.deleteSession(session)
+                sessionManager.deleteSession(currentSession)
                 presentationMode.wrappedValue.dismiss()
             }
         } message: {
@@ -106,7 +110,7 @@ struct SessionDetailView: View {
 
                 Spacer()
 
-                Text(formatTime(audioPlayer?.duration ?? session.duration))
+                Text(formatTime(audioPlayer?.duration ?? currentSession.duration))
                     .font(.caption)
                     .foregroundColor(theme.textSecondary)
                     .monospacedDigit()
@@ -202,10 +206,10 @@ struct SessionDetailView: View {
             }
 
             // Display transcript with word highlighting
-            if let segments = session.transcriptSegments, !segments.isEmpty {
+            if let segments = currentSession.transcriptSegments, !segments.isEmpty {
                 highlightedTranscript(segments: segments)
             } else {
-                Text(session.transcript.isEmpty ? "No transcript available" : session.transcript)
+                Text(currentSession.transcript.isEmpty ? "No transcript available" : currentSession.transcript)
                     .font(.body)
                     .foregroundColor(theme.textPrimary)
                     .lineSpacing(8)
@@ -354,7 +358,7 @@ struct SessionDetailView: View {
     }
 
     private func setupAudioPlayer() {
-        guard let audioURL = sessionManager.getAudioURL(for: session) else {
+        guard let audioURL = sessionManager.getAudioURL(for: currentSession) else {
             print("❌ No audio URL for session")
             return
         }
@@ -379,7 +383,7 @@ struct SessionDetailView: View {
         }
 
         // Debug: Print first few word timestamps
-        if let segments = session.transcriptSegments, let firstSegment = segments.first {
+        if let segments = currentSession.transcriptSegments, let firstSegment = segments.first {
             print("🎯 Word timestamps (first 5):")
             for (index, word) in firstSegment.words.prefix(5).enumerated() {
                 print("   \(index + 1). \"\(word.word)\" [\(String(format: "%.2f", word.startTime))s - \(String(format: "%.2f", word.endTime))s]")
@@ -457,7 +461,7 @@ struct SessionDetailView: View {
 
             // Debug: Print current word being highlighted (every 0.5s)
             if Int(newTime * 10) % 5 == 0 {
-                if let segments = session.transcriptSegments, let firstSegment = segments.first {
+                if let segments = currentSession.transcriptSegments, let firstSegment = segments.first {
                     let currentWord = firstSegment.words.first(where: { word in
                         newTime >= word.startTime && newTime < word.endTime
                     })
