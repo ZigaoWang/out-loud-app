@@ -16,6 +16,8 @@ struct SessionDetailView: View {
     // Edit title
     @State private var isEditingTitle = false
     @State private var editedTitle = ""
+    @State private var showDeleteConfirmation = false
+    @Environment(\.presentationMode) var presentationMode
 
     private let theme = DashboardTheme.self
 
@@ -47,11 +49,21 @@ struct SessionDetailView: View {
         .navigationBarTitleDisplayMode(.large)
         .navigationTitle(session.displayTitle)
         .toolbar {
-            Button(action: {
-                editedTitle = session.title ?? ""
-                isEditingTitle = true
-            }) {
-                Image(systemName: "pencil")
+            Menu {
+                Button {
+                    editedTitle = session.title ?? ""
+                    isEditingTitle = true
+                } label: {
+                    Label("Edit Title", systemImage: "pencil")
+                }
+
+                Button(role: .destructive) {
+                    showDeleteConfirmation = true
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
             }
         }
         .alert("Edit Title", isPresented: $isEditingTitle) {
@@ -60,6 +72,15 @@ struct SessionDetailView: View {
             Button("Save") {
                 sessionManager.updateSessionTitle(session, newTitle: editedTitle)
             }
+        }
+        .alert("Delete Session", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                sessionManager.deleteSession(session)
+                presentationMode.wrappedValue.dismiss()
+            }
+        } message: {
+            Text("Are you sure you want to delete this session? This action cannot be undone.")
         }
         .onAppear {
             setupAudioPlayer()

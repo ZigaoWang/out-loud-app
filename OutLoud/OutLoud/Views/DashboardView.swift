@@ -129,7 +129,7 @@ struct DashboardView: View {
                         SessionRow(session: session)
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    .contextMenu {
                         Button(role: .destructive) {
                             sessionManager.deleteSession(session)
                         } label: {
