@@ -13,6 +13,10 @@ struct SessionDetailView: View {
     @State private var timer: Timer?
     @State private var audioPlayerDelegate: AudioPlayerDelegateWrapper?
 
+    // Edit title
+    @State private var isEditingTitle = false
+    @State private var editedTitle = ""
+
     private let theme = DashboardTheme.self
 
     var body: some View {
@@ -42,6 +46,21 @@ struct SessionDetailView: View {
         }
         .navigationBarTitleDisplayMode(.large)
         .navigationTitle(session.displayTitle)
+        .toolbar {
+            Button(action: {
+                editedTitle = session.title ?? ""
+                isEditingTitle = true
+            }) {
+                Image(systemName: "pencil")
+            }
+        }
+        .alert("Edit Title", isPresented: $isEditingTitle) {
+            TextField("Title", text: $editedTitle)
+            Button("Cancel", role: .cancel) { }
+            Button("Save") {
+                sessionManager.updateSessionTitle(session, newTitle: editedTitle)
+            }
+        }
         .onAppear {
             setupAudioPlayer()
         }

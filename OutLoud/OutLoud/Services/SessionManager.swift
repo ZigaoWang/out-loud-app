@@ -97,6 +97,28 @@ class SessionManager: ObservableObject {
         persistSessions()
     }
 
+    func updateSessionTitle(_ session: SavedSession, newTitle: String) {
+        guard let index = savedSessions.firstIndex(where: { $0.id == session.id }) else { return }
+
+        let oldSession = savedSessions[index]
+        let updatedSession = SavedSession(
+            id: oldSession.id,
+            transcript: oldSession.transcript,
+            transcriptSegments: oldSession.transcriptSegments,
+            startTime: oldSession.startTime,
+            endTime: oldSession.endTime,
+            duration: oldSession.duration,
+            audioFileName: oldSession.audioFileName,
+            analysis: oldSession.analysis,
+            title: newTitle.isEmpty ? nil : newTitle,
+            parentSessionId: oldSession.parentSessionId,
+            followUpSessionIds: oldSession.followUpSessionIds
+        )
+
+        savedSessions[index] = updatedSession
+        persistSessions()
+    }
+
     func deleteSession(_ session: SavedSession) {
         // Delete audio file
         if let audioFileName = session.audioFileName {
