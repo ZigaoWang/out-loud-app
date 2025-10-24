@@ -81,9 +81,9 @@ class SessionViewModel: ObservableObject {
                 // Convert words to transcript segments
                 var segments: [TranscriptSegment]? = nil
                 if let words = words, !words.isEmpty {
-                    // Group words into segments (for now, one segment with all words)
+                    let text = words.map { $0.word }.joined(separator: " ")
                     let segment = TranscriptSegment(
-                        text: self.session.transcript,
+                        text: text,
                         words: words,
                         startTime: words.first?.startTime ?? 0,
                         endTime: words.last?.endTime ?? 0

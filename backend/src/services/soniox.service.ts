@@ -166,49 +166,37 @@ export class SonioxService {
 
   private processTokens(tokens: any[]): void {
     try {
-      let finalTokens = '';
-      let nonFinalTokens = '';
-      const finalSubwords: Array<{text: string, start_ms: number, end_ms: number}> = [];
+      let finalText = '';
+      let nonFinalText = '';
+      const finalTokens: Array<{text: string, start_ms: number, end_ms: number}> = [];
 
-      // Separate final and non-final tokens
       for (const token of tokens) {
-        if (!token.text || typeof token.text !== 'string') {
-          continue;
-        }
+        if (!token.text || typeof token.text !== 'string') continue;
 
         if (token.is_final) {
-          finalTokens += token.text;
-
-          // Collect subwords with valid timestamps
-          if (typeof token.start_ms === 'number' &&
-              typeof token.end_ms === 'number' &&
-              token.start_ms >= 0 &&
-              token.end_ms >= token.start_ms) {
-            finalSubwords.push({
+          finalText += token.text;
+          if (typeof token.start_ms === 'number' && typeof token.end_ms === 'number') {
+            finalTokens.push({
               text: token.text,
               start_ms: token.start_ms,
               end_ms: token.end_ms,
             });
           }
         } else {
-          nonFinalTokens += token.text;
+          nonFinalText += token.text;
         }
       }
 
-      // Merge subwords into full words
-      const finalWords = this.mergeSubwordsIntoWords(finalSubwords);
+      const finalWords = this.mergeSubwordsIntoWords(finalTokens);
 
-      // Handle final tokens
-      if (finalTokens && this.onTranscriptCallback) {
-        this.finalTranscript += finalTokens;
+      if (finalText && this.onTranscriptCallback) {
+        this.finalTranscript += finalText;
         this.allWords.push(...finalWords);
         this.onTranscriptCallback(this.finalTranscript, true, this.allWords);
       }
 
-      // Handle non-final tokens
-      if (nonFinalTokens && this.onTranscriptCallback) {
-        const previewText = this.finalTranscript + nonFinalTokens;
-        this.onTranscriptCallback(previewText, false);
+      if (nonFinalText && this.onTranscriptCallback) {
+        this.onTranscriptCallback(this.finalTranscript + nonFinalText, false);
       }
     } catch (error) {
       console.error('❌ Error processing tokens:', error);
@@ -332,78 +320,39 @@ export class SonioxService {
     }
   }
 
-  private mergeSubwordsIntoWords(subwords: Array<{text: string, start_ms: number, end_ms: number}>): TranscriptWord[] {
-    if (!Array.isArray(subwords) || subwords.length === 0) {
-      return [];
-    }
+  private mergeSubwordsIntoWords(tokens: Array<{text: string, start_ms: number, end_ms: number}>): TranscriptWord[] {
+    if (!tokens.length) return [];
 
     const words: TranscriptWord[] = [];
+    let word = '';
+    let startMs = -1;
+    let endMs = -1;
 
-    try {
-      let currentWord = '';
-      let currentStartMs = subwords[0].start_ms;
-      let currentEndMs = subwords[0].end_ms;
+    for (const token of tokens) {
+      const text = token.text.replace(/<end>/gi, '').replace(/<\/end>/gi, '');
+      if (!text) continue;
 
-      for (let i = 0; i < subwords.length; i++) {
-        const subword = subwords[i];
-
-        if (!subword || typeof subword.text !== 'string') {
-          continue;
+      if (/^\s/.test(text)) {
+        // Space at start = new word boundary
+        if (word) {
+          words.push({ word, startTime: startMs / 1000, endTime: endMs / 1000 });
         }
-
-        const text = subword.text;
-
-        // Skip <end> markers
-        if (text.includes('<end>')) continue;
-
-        // Check if this subword starts a new word
-        const startsNewWord = /^[\s.,!?;:]/.test(text);
-        const isStandalonePunctuation = /^[.,!?;:]+$/.test(text.trim());
-
-        if (startsNewWord && currentWord.length > 0) {
-          // Save the current word
-          const cleanWord = currentWord.trim();
-          if (cleanWord.length > 0 && currentStartMs >= 0 && currentEndMs >= currentStartMs) {
-            words.push({
-              word: cleanWord,
-              startTime: currentStartMs / 1000,
-              endTime: currentEndMs / 1000,
-            });
-          }
-
-          currentWord = text.trim();
-          currentStartMs = subword.start_ms;
-          currentEndMs = subword.end_ms;
-        } else if (isStandalonePunctuation && currentWord.length > 0) {
-          currentWord += text.trim();
-          currentEndMs = subword.end_ms;
-        } else {
-          currentWord += text;
-          currentEndMs = subword.end_ms;
-        }
+        word = text.trim();
+        startMs = token.start_ms;
+        endMs = token.end_ms;
+      } else {
+        // Continue current word
+        if (startMs < 0) startMs = token.start_ms;
+        word += text;
+        endMs = token.end_ms;
       }
-
-      // Save the last word
-      const cleanWord = currentWord.trim();
-      if (cleanWord.length > 0 && !cleanWord.includes('<end>') &&
-          currentStartMs >= 0 && currentEndMs >= currentStartMs) {
-        words.push({
-          word: cleanWord,
-          startTime: currentStartMs / 1000,
-          endTime: currentEndMs / 1000,
-        });
-      }
-
-      if (words.length > 0) {
-        console.log(`📝 Merged ${subwords.length} subwords into ${words.length} words:`,
-          words.slice(0, 3).map(w => `"${w.word}" [${w.startTime.toFixed(2)}s-${w.endTime.toFixed(2)}s]`).join(', ')
-        );
-      }
-    } catch (error) {
-      console.error('❌ Error merging subwords into words:', error);
-      this.notifyError('Failed to process word timestamps');
     }
 
+    if (word) {
+      words.push({ word, startTime: startMs / 1000, endTime: endMs / 1000 });
+    }
+
+    console.log(`📝 Merged ${tokens.length} subwords → ${words.length} words`);
     return words;
   }
 }
