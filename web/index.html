@@ -1,252 +1,1001 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Out Loud - Sessions</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .header { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .auth-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .auth-form input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex: 1; min-width: 200px; }
-        .auth-form button { padding: 10px 20px; background: #007AFF; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        .auth-form button:hover { background: #0051D5; }
-        .auth-form button.secondary { background: #34C759; }
-        .auth-form button.secondary:hover { background: #28A745; }
-        .search-bar { margin-bottom: 20px; }
-        .search-bar input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
-        .sessions { display: grid; gap: 15px; }
-        .session { background: white; padding: 20px; border-radius: 10px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .session:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-        .session-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
-        .session-meta { color: #666; font-size: 14px; }
-        .session-transcript { margin-top: 10px; color: #333; line-height: 1.5; }
-        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; }
-        .modal.active { display: flex; align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 30px; border-radius: 15px; max-width: 800px; max-height: 80vh; overflow-y: auto; width: 90%; }
-        .close-btn { float: right; font-size: 28px; cursor: pointer; color: #999; }
-        .delete-btn { background: #ff3b30; color: white; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px; }
-        .user-info { display: flex; justify-content: space-between; align-items: center; }
-        .logout-btn { background: #ff3b30; color: white; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Out Loud Sessions</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg-surface: #ffffff;
+      --bg-muted: #f4f6fb;
+      --border: rgba(15, 23, 42, 0.08);
+      --text-primary: #0f172a;
+      --text-secondary: #4b5563;
+      --accent: #2563eb;
+      --accent-dark: #1d4ed8;
+      --accent-soft: rgba(37, 99, 235, 0.08);
+      --danger: #dc2626;
+      --success: #16a34a;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(140deg, #dbeafe 0%, #f8fafc 45%, #ffffff 100%);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .layout {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 40px 20px 60px;
+      gap: 32px;
+    }
+
+    .top-bar {
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .brand h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .brand p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 15px;
+    }
+
+    .panel-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+      gap: 32px;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+      flex: 1;
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: 32px;
+      border: 1px solid rgba(15, 23, 42, 0.05);
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      margin: 0 0 24px;
+      color: var(--text-secondary);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .auth-tabs {
+      display: inline-flex;
+      padding: 4px;
+      background: var(--bg-muted);
+      border-radius: 999px;
+      margin-bottom: 24px;
+      gap: 4px;
+    }
+
+    .auth-tab {
+      border: none;
+      background: none;
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .auth-tab.active {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      box-shadow: 0 1px 6px rgba(15, 23, 42, 0.1);
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    input {
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-size: 15px;
+      background: #fff;
+      transition: border 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .btn {
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn.primary:hover {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.28);
+    }
+
+    .btn.link {
+      background: none;
+      color: var(--accent);
+      font-weight: 500;
+      padding: 0;
+    }
+
+    .password-helper {
+      padding: 14px 16px;
+      background: rgba(37, 99, 235, 0.08);
+      border: 1px solid rgba(37, 99, 235, 0.18);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .password-helper.active {
+      display: flex;
+    }
+
+    .checklist {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .checklist li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .check-symbol {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(15, 23, 42, 0.15);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: transparent;
+      transition: all 0.2s ease;
+    }
+
+    .checklist li.valid .check-symbol {
+      border-color: var(--success);
+      background: rgba(22, 163, 74, 0.1);
+      color: var(--success);
+    }
+
+    .alert {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      border: 1px solid transparent;
+    }
+
+    .alert.error {
+      background: rgba(220, 38, 38, 0.08);
+      border-color: rgba(220, 38, 38, 0.18);
+      color: #b91c1c;
+    }
+
+    .alert.success {
+      background: rgba(22, 163, 74, 0.08);
+      border-color: rgba(22, 163, 74, 0.18);
+      color: #15803d;
+    }
+
+    .hidden { display: none !important; }
+
+    .session-card {
+      background: #fff;
+      border-radius: var(--radius-md);
+      padding: 20px;
+      border: 1px solid rgba(15, 23, 42, 0.06);
+      transition: transform 0.18s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+
+    .session-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+    }
+
+    .session-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 18px;
+    }
+
+    .session-meta {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+    }
+
+    .session-snippet {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .session-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .search-bar {
+      position: relative;
+    }
+
+    .search-bar input {
+      width: 100%;
+      padding-left: 44px;
+    }
+
+    .search-bar svg {
+      position: absolute;
+      top: 50%;
+      left: 16px;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      stroke: var(--text-secondary);
+      opacity: 0.6;
+    }
+
+    .user-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+      font-size: 14px;
+    }
+
+    .user-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .muted {
+      color: var(--text-secondary);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 0;
+      color: var(--text-secondary);
+    }
+
+    .modal-layer {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.22);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .modal h3 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .modal .btn {
+      min-width: 120px;
+    }
+
+    .detail-modal {
+      max-width: 720px;
+      gap: 24px;
+    }
+
+    .detail-modal h2 {
+      margin: 0;
+    }
+
+    .detail-section {
+      background: var(--bg-muted);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      border: 1px solid rgba(15, 23, 42, 0.05);
+    }
+
+    .detail-section h4 {
+      margin: 0 0 12px;
+      font-size: 16px;
+    }
+
+    .detail-section p {
+      margin: 0;
+      line-height: 1.7;
+      color: var(--text-secondary);
+    }
+
+    .danger {
+      background: rgba(220, 38, 38, 0.12) !important;
+      color: #b91c1c !important;
+    }
+
+    @media (max-width: 960px) {
+      .panel-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .layout {
+        padding: 24px 16px 80px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div id="authSection" class="auth-form">
-                <input type="email" id="email" placeholder="Email">
-                <input type="password" id="password" placeholder="Password">
-                <button onclick="signIn()">Sign In</button>
-                <button class="secondary" onclick="signUp()">Sign Up</button>
-            </div>
-            <div id="userSection" style="display:none;" class="user-info">
-                <span id="userEmail"></span>
-                <button class="logout-btn" onclick="signOut()">Sign Out</button>
-            </div>
+  <div class="layout">
+    <header class="top-bar">
+      <div class="brand">
+        <h1>Out Loud Admin</h1>
+        <p>Review recordings, transcripts, and AI analysis in one place.</p>
+      </div>
+      <div class="user-actions hidden" id="userActions">
+        <div class="user-chip">
+          <span class="tag">Signed In</span>
+          <span id="activeUserEmail"></span>
+        </div>
+        <button class="btn" id="signOutBtn">Sign Out</button>
+      </div>
+    </header>
+
+    <div class="panel-grid">
+      <section class="card" id="authPanel">
+        <h2>Welcome back</h2>
+        <p class="subtitle">Securely access your Out Loud sessions with Supabase-authenticated login.</p>
+
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-mode="sign-in">Sign In</button>
+          <button class="auth-tab" data-mode="sign-up">Create Account</button>
         </div>
 
-        <div id="mainContent" style="display:none;">
-            <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="Search sessions..." oninput="filterSessions()">
-            </div>
-            <div class="sessions" id="sessionsList"></div>
+        <form id="authForm">
+          <div class="input-group">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required />
+          </div>
+          <div class="input-group">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" placeholder="Enter password" autocomplete="current-password" required />
+          </div>
+
+          <div class="password-helper" id="passwordHelper">
+            <strong>Password requirements</strong>
+            <ul class="checklist" id="passwordChecklist"></ul>
+          </div>
+
+          <button class="btn primary" type="submit" id="authSubmitBtn">Continue</button>
+        </form>
+
+        <button class="btn link" id="forgotPasswordBtn" type="button">Forgot password?</button>
+        <div class="alert hidden" id="authAlert"></div>
+      </section>
+
+      <section class="card hidden" id="appPanel">
+        <div class="input-group">
+          <label for="searchInput">Search Sessions</label>
+          <div class="search-bar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="7"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input id="searchInput" type="search" placeholder="Filter by title, transcript, or keywords" autocomplete="off" />
+          </div>
         </div>
+
+        <div class="session-grid" id="sessionsList"></div>
+      </section>
     </div>
+  </div>
 
-    <div class="modal" id="sessionModal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">&times;</span>
-            <div id="sessionDetail"></div>
-        </div>
+  <div class="modal-layer hidden" id="resetModalLayer">
+    <div class="modal" id="resetModal">
+      <div>
+        <h3>Update password</h3>
+        <p class="subtitle">Enter a new password that meets the security requirements.</p>
+      </div>
+      <div class="input-group">
+        <label for="newPassword">New password</label>
+        <input id="newPassword" type="password" autocomplete="new-password" />
+      </div>
+      <div class="input-group">
+        <label for="confirmPassword">Confirm password</label>
+        <input id="confirmPassword" type="password" autocomplete="new-password" />
+      </div>
+      <div class="password-helper active">
+        <ul class="checklist" id="resetChecklist"></ul>
+      </div>
+      <div class="alert hidden" id="resetAlert"></div>
+      <div class="modal-actions">
+        <button class="btn" type="button" id="cancelResetBtn">Cancel</button>
+        <button class="btn primary" type="button" id="submitResetBtn">Update password</button>
+      </div>
     </div>
+  </div>
 
-    <script>
-        // Load config from external file
-        let supabaseUrl, supabaseKey;
+  <div class="modal-layer hidden" id="sessionModalLayer">
+    <div class="modal detail-modal" id="sessionModal">
+      <div class="modal-actions" style="justify-content: flex-end;">
+        <button class="btn" type="button" id="closeSessionModal">Close</button>
+      </div>
+      <div id="sessionDetail"></div>
+      <button class="btn danger" type="button" id="deleteSessionBtn">Delete session</button>
+    </div>
+  </div>
 
-        fetch('config.json')
-            .then(r => r.json())
-            .then(config => {
-                supabaseUrl = config.SUPABASE_URL;
-                supabaseKey = config.SUPABASE_ANON_KEY;
-                initApp();
-            })
-            .catch(() => {
-                alert('Missing config.json - copy config.example.json to config.json');
-            });
+  <script>
+    const passwordRules = [
+      { id: 'length', label: 'At least 12 characters', test: value => value.length >= 12 },
+      { id: 'lower', label: 'Lowercase letter', test: value => /[a-z]/.test(value) },
+      { id: 'upper', label: 'Uppercase letter', test: value => /[A-Z]/.test(value) },
+      { id: 'digit', label: 'Number', test: value => /\d/.test(value) },
+      { id: 'symbol', label: 'Symbol (e.g. !@#$)', test: value => /[^A-Za-z0-9]/.test(value) },
+    ];
 
-        let supabase;
+    const ui = {};
+    const state = {
+      supabase: null,
+      authMode: 'sign-in',
+      sessions: [],
+      activeSession: null,
+      passwordRecovery: false,
+    };
 
-        function initApp() {
-            const { createClient } = window.supabase;
-            supabase = createClient(supabaseUrl, supabaseKey);
-            checkAuth();
+    document.addEventListener('DOMContentLoaded', () => {
+      cacheElements();
+      bindUI();
+      renderChecklist(ui.passwordChecklist);
+      renderChecklist(ui.resetChecklist);
+      bootstrapSupabase();
+    });
+
+    function cacheElements() {
+      ui.authPanel = document.getElementById('authPanel');
+      ui.appPanel = document.getElementById('appPanel');
+      ui.authTabs = Array.from(document.querySelectorAll('.auth-tab'));
+      ui.authForm = document.getElementById('authForm');
+      ui.emailInput = document.getElementById('email');
+      ui.passwordInput = document.getElementById('password');
+      ui.authSubmitBtn = document.getElementById('authSubmitBtn');
+      ui.passwordHelper = document.getElementById('passwordHelper');
+      ui.passwordChecklist = document.getElementById('passwordChecklist');
+      ui.forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
+      ui.authAlert = document.getElementById('authAlert');
+      ui.userActions = document.getElementById('userActions');
+      ui.signOutBtn = document.getElementById('signOutBtn');
+      ui.activeUserEmail = document.getElementById('activeUserEmail');
+      ui.searchInput = document.getElementById('searchInput');
+      ui.sessionsList = document.getElementById('sessionsList');
+      ui.resetModalLayer = document.getElementById('resetModalLayer');
+      ui.resetAlert = document.getElementById('resetAlert');
+      ui.cancelResetBtn = document.getElementById('cancelResetBtn');
+      ui.submitResetBtn = document.getElementById('submitResetBtn');
+      ui.newPasswordInput = document.getElementById('newPassword');
+      ui.confirmPasswordInput = document.getElementById('confirmPassword');
+      ui.resetChecklist = document.getElementById('resetChecklist');
+      ui.sessionModalLayer = document.getElementById('sessionModalLayer');
+      ui.sessionDetail = document.getElementById('sessionDetail');
+      ui.closeSessionModal = document.getElementById('closeSessionModal');
+      ui.deleteSessionBtn = document.getElementById('deleteSessionBtn');
+    }
+
+    function bindUI() {
+      ui.authTabs.forEach(tab => {
+        tab.addEventListener('click', () => setAuthMode(tab.dataset.mode));
+      });
+
+      ui.authForm.addEventListener('submit', handleAuthSubmit);
+      ui.passwordInput.addEventListener('input', () => {
+        renderChecklist(ui.passwordChecklist, ui.passwordInput.value);
+      });
+
+      ui.forgotPasswordBtn.addEventListener('click', handleForgotPassword);
+      ui.signOutBtn.addEventListener('click', handleSignOut);
+      ui.searchInput.addEventListener('input', filterSessions);
+      ui.cancelResetBtn.addEventListener('click', hideResetModal);
+      ui.submitResetBtn.addEventListener('click', handleResetPasswordSubmit);
+      ui.newPasswordInput.addEventListener('input', () => renderChecklist(ui.resetChecklist, ui.newPasswordInput.value));
+      ui.closeSessionModal.addEventListener('click', closeSessionModal);
+      ui.sessionModalLayer.addEventListener('click', event => {
+        if (event.target === ui.sessionModalLayer) {
+          closeSessionModal();
+        }
+      });
+      ui.resetModalLayer.addEventListener('click', event => {
+        if (event.target === ui.resetModalLayer) {
+          hideResetModal();
+        }
+      });
+    }
+
+    async function bootstrapSupabase() {
+      try {
+        const response = await fetch('config.json');
+        const config = await response.json();
+        const { createClient } = window.supabase;
+        state.supabase = createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY);
+        setupAuthListener();
+        await checkAuth();
+      } catch (error) {
+        displayAlert(ui.authAlert, 'Missing config.json - copy config.example.json and add Supabase keys.', 'error');
+      }
+    }
+
+    function setupAuthListener() {
+      state.supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          state.passwordRecovery = true;
+          showResetModal();
+          return;
         }
 
-        let allSessions = [];
-
-        async function checkAuth() {
-            if (!supabase) return;
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                    document.getElementById('authSection').style.display = 'none';
-                    document.getElementById('userSection').style.display = 'flex';
-                    document.getElementById('userEmail').textContent = session.user.email;
-                    document.getElementById('mainContent').style.display = 'block';
-                    loadSessions();
-                }
-            } catch (error) {
-                console.error('Auth check error:', error);
-            }
+        if (session) {
+          applyAuthenticatedState(session);
+        } else if (!state.passwordRecovery) {
+          applyLoggedOutState();
         }
+      });
+    }
 
-        async function signIn() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+    async function checkAuth() {
+      if (!state.supabase) return;
+      const { data } = await state.supabase.auth.getSession();
+      if (data.session) {
+        applyAuthenticatedState(data.session);
+      } else {
+        applyLoggedOutState();
+      }
+    }
 
-            if (!email || !password) {
-                alert('Please enter email and password');
-                return;
-            }
+    function setAuthMode(mode) {
+      state.authMode = mode;
+      ui.authTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.mode === mode));
+      ui.authSubmitBtn.textContent = mode === 'sign-in' ? 'Sign In' : 'Create Account';
+      ui.passwordHelper.classList.toggle('active', mode === 'sign-up');
+      renderChecklist(ui.passwordChecklist, ui.passwordInput.value);
+      hideAlert(ui.authAlert);
+    }
 
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) {
-                    alert('Login failed: ' + error.message);
-                } else {
-                    checkAuth();
-                }
-            } catch (error) {
-                console.error('Sign in error:', error);
-                alert('Login error: ' + error.message);
-            }
+    function renderChecklist(container, value = '') {
+      container.innerHTML = '';
+      passwordRules.forEach(rule => {
+        const valid = rule.test(value || '');
+        const li = document.createElement('li');
+        li.className = valid ? 'valid' : '';
+        li.innerHTML = `<span class="check-symbol">${valid ? '✓' : ''}</span>${rule.label}`;
+        container.appendChild(li);
+      });
+    }
+
+    function validatePassword(password) {
+      return passwordRules.every(rule => rule.test(password));
+    }
+
+    async function handleAuthSubmit(event) {
+      event.preventDefault();
+      hideAlert(ui.authAlert);
+
+      const email = ui.emailInput.value.trim().toLowerCase();
+      const password = ui.passwordInput.value;
+
+      if (!email || !password) {
+        displayAlert(ui.authAlert, 'Email and password are required.', 'error');
+        return;
+      }
+
+      if (state.authMode === 'sign-up' && !validatePassword(password)) {
+        displayAlert(ui.authAlert, 'Please choose a stronger password that meets all requirements.', 'error');
+        return;
+      }
+
+      ui.authSubmitBtn.disabled = true;
+      ui.authSubmitBtn.textContent = state.authMode === 'sign-in' ? 'Signing in…' : 'Creating account…';
+
+      try {
+        if (state.authMode === 'sign-in') {
+          const { error } = await state.supabase.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          displayAlert(ui.authAlert, 'Signed in successfully.', 'success');
+        } else {
+          const { error } = await state.supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              emailRedirectTo: window.location.origin,
+            },
+          });
+          if (error) throw error;
+          displayAlert(ui.authAlert, 'Check your inbox to confirm your account before signing in.', 'success');
+          setAuthMode('sign-in');
         }
+      } catch (error) {
+        displayAlert(ui.authAlert, error.message || 'Authentication failed.', 'error');
+      } finally {
+        ui.authSubmitBtn.disabled = false;
+        ui.authSubmitBtn.textContent = state.authMode === 'sign-in' ? 'Sign In' : 'Create Account';
+      }
+    }
 
-        async function signUp() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+    async function handleForgotPassword() {
+      hideAlert(ui.authAlert);
+      const email = ui.emailInput.value.trim().toLowerCase();
+      if (!email) {
+        displayAlert(ui.authAlert, 'Enter the email address first so we know where to send the reset link.', 'error');
+        return;
+      }
 
-            if (!email || !password) {
-                alert('Please enter email and password');
-                return;
-            }
+      try {
+        const { error } = await state.supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}?reset=1`,
+        });
+        if (error) throw error;
+        displayAlert(ui.authAlert, 'Password reset email sent. Follow the link to choose a new password.', 'success');
+      } catch (error) {
+        displayAlert(ui.authAlert, error.message || 'Unable to send reset email.', 'error');
+      }
+    }
 
-            if (password.length < 6) {
-                alert('Password must be at least 6 characters');
-                return;
-            }
+    async function handleSignOut() {
+      await state.supabase.auth.signOut();
+      applyLoggedOutState();
+      setAuthMode('sign-in');
+      state.passwordRecovery = false;
+    }
 
-            try {
-                const { data, error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        emailRedirectTo: window.location.origin
-                    }
-                });
-                if (error) {
-                    alert('Sign up failed: ' + error.message);
-                } else {
-                    alert('Account created! You can now sign in.');
-                }
-            } catch (error) {
-                console.error('Sign up error:', error);
-                alert('Sign up error: ' + error.message);
-            }
+    function applyAuthenticatedState(session) {
+      ui.authPanel.classList.add('hidden');
+      ui.appPanel.classList.remove('hidden');
+      ui.userActions.classList.remove('hidden');
+      ui.activeUserEmail.textContent = session.user.email;
+      loadSessions();
+    }
+
+    function applyLoggedOutState() {
+      ui.authPanel.classList.remove('hidden');
+      ui.appPanel.classList.add('hidden');
+      ui.userActions.classList.add('hidden');
+      ui.activeUserEmail.textContent = '';
+      ui.sessionsList.innerHTML = '';
+      state.sessions = [];
+    }
+
+    async function loadSessions() {
+      try {
+        const { data, error } = await state.supabase
+          .from('sessions')
+          .select('*')
+          .order('start_time', { ascending: false });
+        if (error) throw error;
+        state.sessions = data || [];
+        renderSessions(state.sessions);
+      } catch (error) {
+        displayAlert(ui.authAlert, error.message || 'Failed to load sessions.', 'error');
+      }
+    }
+
+    function renderSessions(sessions) {
+      if (!sessions.length) {
+        ui.sessionsList.innerHTML = `
+          <div class="empty-state">
+            <h3>No sessions yet</h3>
+            <p class="muted">Record in the Out Loud app to populate your dashboard.</p>
+          </div>`;
+        return;
+      }
+
+      ui.sessionsList.innerHTML = sessions
+        .map(session => {
+          const date = new Date(session.start_time).toLocaleString();
+          const duration = formatDuration(session.duration);
+          const summary = session.analysis?.summary || session.transcript || '';
+          return `
+            <article class="session-card" data-session-id="${session.id}">
+              <div class="session-title">${escapeHtml(session.title || 'Untitled Session')}</div>
+              <div class="session-meta">${date} • ${duration}</div>
+              <div class="session-snippet">${escapeHtml(summary).slice(0, 240)}${summary.length > 240 ? '…' : ''}</div>
+            </article>`;
+        })
+        .join('');
+
+      Array.from(document.querySelectorAll('.session-card')).forEach(card => {
+        card.addEventListener('click', () => openSessionDetail(card.dataset.sessionId));
+      });
+    }
+
+    function filterSessions() {
+      const query = ui.searchInput.value.trim().toLowerCase();
+      if (!query) {
+        renderSessions(state.sessions);
+        return;
+      }
+
+      const filtered = state.sessions.filter(session => {
+        const fields = [session.title, session.transcript, session.analysis?.summary]
+          .filter(Boolean)
+          .map(value => value.toLowerCase());
+        return fields.some(field => field.includes(query));
+      });
+
+      renderSessions(filtered);
+    }
+
+    async function openSessionDetail(sessionId) {
+      const session = state.sessions.find(item => String(item.id) === String(sessionId));
+      if (!session) return;
+      state.activeSession = session;
+
+      let audioPlayer = '';
+      if (session.audio_path) {
+        try {
+          const { data } = await state.supabase.storage.from('audio-recordings').createSignedUrl(session.audio_path, 3600);
+          if (data?.signedUrl) {
+            audioPlayer = `
+              <div class="detail-section">
+                <h4>Recording</h4>
+                <audio controls style="width: 100%;">
+                  <source src="${data.signedUrl}" type="audio/mp4">
+                  Your browser does not support audio playback.
+                </audio>
+              </div>`;
+          }
+        } catch (error) {
+          console.error('Audio load error', error);
         }
+      }
 
-        async function signOut() {
-            await supabase.auth.signOut();
-            location.reload();
-        }
+      const keywords = session.analysis?.keywords?.length
+        ? `<div class="detail-section"><h4>Keywords</h4><p>${session.analysis.keywords.join(', ')}</p></div>`
+        : '';
 
-        async function loadSessions() {
-            const { data, error } = await supabase.from('sessions').select('*').order('start_time', { ascending: false });
-            if (error) {
-                console.error('Load sessions error:', error);
-                alert('Failed to load sessions: ' + error.message);
-                return;
-            }
-            allSessions = data || [];
-            displaySessions(allSessions);
-        }
+      const analysis = session.analysis
+        ? `<div class="detail-section"><h4>AI Analysis</h4><p>${escapeHtml(session.analysis.summary)}</p></div>`
+        : '';
 
-        function displaySessions(sessions) {
-            const list = document.getElementById('sessionsList');
-            if (sessions.length === 0) {
-                list.innerHTML = '<p style="text-align:center;color:#666;padding:40px;">No sessions yet. Record one in the iOS app!</p>';
-                return;
-            }
-            list.innerHTML = sessions.map(s => `
-                <div class="session" onclick="showSession(${s.id})">
-                    <div class="session-title">${s.title || 'Untitled Session'}</div>
-                    <div class="session-meta">${new Date(s.start_time).toLocaleString()} • ${Math.round(s.duration)}s</div>
-                    <div class="session-transcript">${s.transcript.substring(0, 150)}...</div>
-                </div>
-            `).join('');
-        }
+      ui.sessionDetail.innerHTML = `
+        <div>
+          <h2>${escapeHtml(session.title || 'Untitled Session')}</h2>
+          <p class="muted" style="margin-top: 4px;">${new Date(session.start_time).toLocaleString()} • ${formatDuration(session.duration)}</p>
+        </div>
+        ${audioPlayer}
+        <div class="detail-section">
+          <h4>Transcript</h4>
+          <p>${escapeHtml(session.transcript)}</p>
+        </div>
+        ${analysis}
+        ${keywords}
+      `;
 
-        function filterSessions() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allSessions.filter(s =>
-                (s.title || '').toLowerCase().includes(query) ||
-                s.transcript.toLowerCase().includes(query)
-            );
-            displaySessions(filtered);
-        }
+      ui.deleteSessionBtn.onclick = () => confirmDeleteSession(sessionId);
+      ui.sessionModalLayer.classList.remove('hidden');
+    }
 
-        async function showSession(id) {
-            const session = allSessions.find(s => s.id == id);
+    function closeSessionModal() {
+      ui.sessionModalLayer.classList.add('hidden');
+      state.activeSession = null;
+    }
 
-            let audioPlayer = '';
-            if (session.audio_path) {
-                const { data: { session: authSession } } = await supabase.auth.getSession();
-                const { data } = await supabase.storage.from('audio-recordings').createSignedUrl(session.audio_path, 3600);
-                if (data?.signedUrl) {
-                    audioPlayer = `
-                        <div style="margin:20px 0;padding:15px;background:#f5f5f5;border-radius:8px;">
-                            <audio controls style="width:100%;">
-                                <source src="${data.signedUrl}" type="audio/mp4">
-                                Your browser does not support audio playback.
-                            </audio>
-                        </div>
-                    `;
-                }
-            }
+    async function confirmDeleteSession(sessionId) {
+      if (!confirm('Delete this session permanently?')) return;
+      try {
+        const { error } = await state.supabase
+          .from('sessions')
+          .delete()
+          .eq('id', sessionId);
+        if (error) throw error;
+        closeSessionModal();
+        loadSessions();
+      } catch (error) {
+        alert(error.message || 'Failed to delete session.');
+      }
+    }
 
-            document.getElementById('sessionDetail').innerHTML = `
-                <h2>${session.title || 'Untitled Session'}</h2>
-                <p style="color:#666;margin:10px 0;">${new Date(session.start_time).toLocaleString()} • ${Math.round(session.duration)}s</p>
-                ${audioPlayer}
-                <h3 style="margin-top:20px;">Transcript</h3>
-                <p style="line-height:1.8;margin-top:10px;">${session.transcript}</p>
-                ${session.analysis ? `
-                    <h3 style="margin-top:20px;">Analysis</h3>
-                    <p style="margin-top:10px;"><strong>Summary:</strong> ${session.analysis.summary}</p>
-                    <p style="margin-top:10px;"><strong>Keywords:</strong> ${session.analysis.keywords.join(', ')}</p>
-                ` : ''}
-                <button class="delete-btn" onclick="deleteSession(${session.id})">Delete Session</button>
-            `;
-            document.getElementById('sessionModal').classList.add('active');
-        }
+    function showResetModal() {
+      ui.resetModalLayer.classList.remove('hidden');
+      ui.newPasswordInput.value = '';
+      ui.confirmPasswordInput.value = '';
+      renderChecklist(ui.resetChecklist, '');
+      hideAlert(ui.resetAlert);
+      ui.newPasswordInput.focus();
+    }
 
-        function closeModal() {
-            document.getElementById('sessionModal').classList.remove('active');
-        }
+    function hideResetModal() {
+      ui.resetModalLayer.classList.add('hidden');
+      state.passwordRecovery = false;
+    }
 
-        async function deleteSession(id) {
-            if (!confirm('Delete this session?')) return;
-            const { error } = await supabase.from('sessions').delete().eq('id', id);
-            if (error) { alert(error.message); return; }
-            closeModal();
-            loadSessions();
-        }
+    async function handleResetPasswordSubmit() {
+      hideAlert(ui.resetAlert);
+      const newPassword = ui.newPasswordInput.value;
+      const confirmPassword = ui.confirmPasswordInput.value;
 
-        checkAuth();
-    </script>
+      if (!validatePassword(newPassword)) {
+        displayAlert(ui.resetAlert, 'Password must meet all requirements.', 'error');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        displayAlert(ui.resetAlert, 'Passwords do not match.', 'error');
+        return;
+      }
+
+      ui.submitResetBtn.disabled = true;
+      ui.submitResetBtn.textContent = 'Updating…';
+
+      try {
+        const { error } = await state.supabase.auth.updateUser({ password: newPassword });
+        if (error) throw error;
+        displayAlert(ui.resetAlert, 'Password updated. You are now signed in.', 'success');
+        hideResetModal();
+        await checkAuth();
+      } catch (error) {
+        displayAlert(ui.resetAlert, error.message || 'Unable to update password.', 'error');
+      } finally {
+        ui.submitResetBtn.disabled = false;
+        ui.submitResetBtn.textContent = 'Update password';
+      }
+    }
+
+    function displayAlert(container, message, type = 'success') {
+      container.textContent = message;
+      container.className = `alert ${type}`;
+      container.classList.remove('hidden');
+    }
+
+    function hideAlert(container) {
+      container.classList.add('hidden');
+      container.textContent = '';
+    }
+
+    function formatDuration(seconds = 0) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.round(seconds % 60);
+      if (mins >= 1) {
+        return `${mins}m ${String(secs).padStart(2, '0')}s`;
+      }
+      return `${secs}s`;
+    }
+
+    function escapeHtml(value = '') {
+      return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
 </body>
 </html>
