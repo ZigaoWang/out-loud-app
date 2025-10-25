@@ -5,17 +5,8 @@ class SessionManager: ObservableObject {
 
     @Published var savedSessions: [SavedSession] = []
 
-    private let sessionsKey = "saved_sessions"
-    private let audioDirectory: URL
-
     init() {
-        // Create audio directory
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        self.audioDirectory = documentsPath.appendingPathComponent("Recordings", isDirectory: true)
-
-        try? FileManager.default.createDirectory(at: audioDirectory, withIntermediateDirectories: true)
-
-        loadSessions()
+        // Cloud-only, no local storage
     }
 
     // MARK: - Persistence
@@ -27,138 +18,74 @@ class SessionManager: ObservableObject {
         transcriptSegments: [TranscriptSegment]? = nil,
         parentSessionId: String? = nil
     ) {
-        var audioFileName: String?
-
-        // Copy audio file to permanent location
-        if let audioURL = audioURL {
-            // Use the original file extension from the temp file
-            let fileExtension = audioURL.pathExtension
-            audioFileName = "\(session.id).\(fileExtension)"
-            let destinationURL = audioDirectory.appendingPathComponent(audioFileName!)
-
+        // Save to cloud only
+        Task { @MainActor in
             do {
-                // Remove existing file if it exists
-                if FileManager.default.fileExists(atPath: destinationURL.path) {
-                    try FileManager.default.removeItem(at: destinationURL)
+                // Upload audio file first if exists
+                var audioPath: String? = nil
+                if let audioURL = audioURL {
+                    do {
+                        audioPath = try await SupabaseService.shared.uploadAudio(sessionId: session.id, fileURL: audioURL)
+                        print("✅ Audio uploaded: \(audioPath ?? "")")
+                    } catch {
+                        print("❌ Audio upload failed: \(error)")
+                        throw error
+                    }
                 }
-                try FileManager.default.copyItem(at: audioURL, to: destinationURL)
-                print("💾 Saved audio file: \(audioFileName!) (size: \((try? FileManager.default.attributesOfItem(atPath: destinationURL.path)[.size] as? Int64) ?? 0) bytes)")
+
+                let savedSession = SavedSession(
+                    id: session.id,
+                    transcript: session.transcript,
+                    transcriptSegments: transcriptSegments,
+                    startTime: session.startTime,
+                    endTime: session.endTime ?? Date(),
+                    duration: session.duration,
+                    audioFileName: audioPath,
+                    analysis: analysis,
+                    title: analysis?.title,
+                    parentSessionId: parentSessionId,
+                    followUpSessionIds: nil
+                )
+
+                do {
+                    try await SupabaseService.shared.syncSession(savedSession)
+                    print("✅ Session synced to cloud")
+                } catch {
+                    print("❌ Database insert failed: \(error)")
+                    throw error
+                }
+                await loadSessions()
             } catch {
-                print("❌ Failed to copy audio file: \(error)")
+                print("❌ Failed to sync session: \(error)")
             }
         }
+    }
 
-        let savedSession = SavedSession(
-            id: session.id,
-            transcript: session.transcript,
-            transcriptSegments: transcriptSegments,
-            startTime: session.startTime,
-            endTime: session.endTime ?? Date(),
-            duration: session.duration,
-            audioFileName: audioFileName,
-            analysis: analysis,
-            title: analysis?.title,
-            parentSessionId: parentSessionId,
-            followUpSessionIds: nil
-        )
-
-        // If this is a follow-up session, update the parent
-        if let parentId = parentSessionId {
-            updateParentSessionWithFollowUp(parentId: parentId, followUpId: session.id)
+    func loadSessions() async {
+        do {
+            let sessions = try await SupabaseService.shared.fetchSessions()
+            await MainActor.run {
+                self.savedSessions = sessions
+            }
+        } catch {
+            print("❌ Failed to load sessions: \(error)")
         }
-
-        savedSessions.insert(savedSession, at: 0)
-        persistSessions()
-    }
-
-    private func updateParentSessionWithFollowUp(parentId: String, followUpId: String) {
-        guard let index = savedSessions.firstIndex(where: { $0.id == parentId }) else { return }
-
-        let parent = savedSessions[index]
-        var followUps = parent.followUpSessionIds ?? []
-        followUps.append(followUpId)
-
-        // Create updated session with new follow-up
-        let updatedParent = SavedSession(
-            id: parent.id,
-            transcript: parent.transcript,
-            transcriptSegments: parent.transcriptSegments,
-            startTime: parent.startTime,
-            endTime: parent.endTime,
-            duration: parent.duration,
-            audioFileName: parent.audioFileName,
-            analysis: parent.analysis,
-            title: parent.title,
-            parentSessionId: parent.parentSessionId,
-            followUpSessionIds: followUps
-        )
-
-        savedSessions[index] = updatedParent
-        persistSessions()
-    }
-
-    func updateSessionTitle(_ session: SavedSession, newTitle: String) {
-        guard let index = savedSessions.firstIndex(where: { $0.id == session.id }) else { return }
-
-        let oldSession = savedSessions[index]
-        let updatedSession = SavedSession(
-            id: oldSession.id,
-            transcript: oldSession.transcript,
-            transcriptSegments: oldSession.transcriptSegments,
-            startTime: oldSession.startTime,
-            endTime: oldSession.endTime,
-            duration: oldSession.duration,
-            audioFileName: oldSession.audioFileName,
-            analysis: oldSession.analysis,
-            title: newTitle.isEmpty ? nil : newTitle,
-            parentSessionId: oldSession.parentSessionId,
-            followUpSessionIds: oldSession.followUpSessionIds
-        )
-
-        savedSessions[index] = updatedSession
-        persistSessions()
     }
 
     func deleteSession(_ session: SavedSession) {
-        // Delete audio file
-        if let audioFileName = session.audioFileName {
-            let audioURL = audioDirectory.appendingPathComponent(audioFileName)
-            try? FileManager.default.removeItem(at: audioURL)
-        }
-
-        savedSessions.removeAll { $0.id == session.id }
-        persistSessions()
-    }
-
-    func getAudioURL(for session: SavedSession) -> URL? {
-        guard let audioFileName = session.audioFileName else { return nil }
-        return audioDirectory.appendingPathComponent(audioFileName)
-    }
-
-    func getFollowUpSessions(for sessionId: String) -> [SavedSession] {
-        savedSessions.filter { $0.parentSessionId == sessionId }
-    }
-
-    func getSessionChain(for session: SavedSession) -> [SavedSession] {
-        var chain: [SavedSession] = [session]
-
-        // Add all follow-ups
-        if let followUpIds = session.followUpSessionIds {
-            for followUpId in followUpIds {
-                if let followUp = savedSessions.first(where: { $0.id == followUpId }) {
-                    chain.append(contentsOf: getSessionChain(for: followUp))
-                }
+        Task {
+            do {
+                try await SupabaseService.shared.deleteSession(session.id)
+                await loadSessions()
+            } catch {
+                print("❌ Failed to delete session: \(error)")
             }
         }
-
-        return chain
     }
 
     var lastSession: SavedSession? {
         savedSessions.first
     }
-
-    // MARK: - Stats
 
     var totalTimeSpent: TimeInterval {
         savedSessions.reduce(0) { $0 + $1.duration }
@@ -171,27 +98,6 @@ class SessionManager: ObservableObject {
     var formattedTotalTime: String {
         let hours = Int(totalTimeSpent) / 3600
         let minutes = (Int(totalTimeSpent) % 3600) / 60
-
-        if hours > 0 {
-            return "\(hours)h \(minutes)m"
-        } else {
-            return "\(minutes)m"
-        }
-    }
-
-    // MARK: - Private
-
-    private func loadSessions() {
-        guard let data = UserDefaults.standard.data(forKey: sessionsKey),
-              let sessions = try? JSONDecoder().decode([SavedSession].self, from: data) else {
-            return
-        }
-
-        savedSessions = sessions
-    }
-
-    private func persistSessions() {
-        guard let data = try? JSONEncoder().encode(savedSessions) else { return }
-        UserDefaults.standard.set(data, forKey: sessionsKey)
+        return hours > 0 ? "\(hours)h \(minutes)m" : "\(minutes)m"
     }
 }

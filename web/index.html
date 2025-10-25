@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Out Loud - Sessions</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .auth-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .auth-form input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex: 1; min-width: 200px; }
+        .auth-form button { padding: 10px 20px; background: #007AFF; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .auth-form button:hover { background: #0051D5; }
+        .auth-form button.secondary { background: #34C759; }
+        .auth-form button.secondary:hover { background: #28A745; }
+        .search-bar { margin-bottom: 20px; }
+        .search-bar input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .sessions { display: grid; gap: 15px; }
+        .session { background: white; padding: 20px; border-radius: 10px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .session:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .session-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+        .session-meta { color: #666; font-size: 14px; }
+        .session-transcript { margin-top: 10px; color: #333; line-height: 1.5; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; max-width: 800px; max-height: 80vh; overflow-y: auto; width: 90%; }
+        .close-btn { float: right; font-size: 28px; cursor: pointer; color: #999; }
+        .delete-btn { background: #ff3b30; color: white; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px; }
+        .user-info { display: flex; justify-content: space-between; align-items: center; }
+        .logout-btn { background: #ff3b30; color: white; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div id="authSection" class="auth-form">
+                <input type="email" id="email" placeholder="Email">
+                <input type="password" id="password" placeholder="Password">
+                <button onclick="signIn()">Sign In</button>
+                <button class="secondary" onclick="signUp()">Sign Up</button>
+            </div>
+            <div id="userSection" style="display:none;" class="user-info">
+                <span id="userEmail"></span>
+                <button class="logout-btn" onclick="signOut()">Sign Out</button>
+            </div>
+        </div>
+
+        <div id="mainContent" style="display:none;">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search sessions..." oninput="filterSessions()">
+            </div>
+            <div class="sessions" id="sessionsList"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="sessionModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div id="sessionDetail"></div>
+        </div>
+    </div>
+
+    <script>
+        // Load config from external file
+        let supabaseUrl, supabaseKey;
+
+        fetch('config.json')
+            .then(r => r.json())
+            .then(config => {
+                supabaseUrl = config.SUPABASE_URL;
+                supabaseKey = config.SUPABASE_ANON_KEY;
+                initApp();
+            })
+            .catch(() => {
+                alert('Missing config.json - copy config.example.json to config.json');
+            });
+
+        let supabase;
+
+        function initApp() {
+            const { createClient } = window.supabase;
+            supabase = createClient(supabaseUrl, supabaseKey);
+            checkAuth();
+        }
+
+        let allSessions = [];
+
+        async function checkAuth() {
+            if (!supabase) return;
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    document.getElementById('authSection').style.display = 'none';
+                    document.getElementById('userSection').style.display = 'flex';
+                    document.getElementById('userEmail').textContent = session.user.email;
+                    document.getElementById('mainContent').style.display = 'block';
+                    loadSessions();
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+            }
+        }
+
+        async function signIn() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                alert('Please enter email and password');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) {
+                    alert('Login failed: ' + error.message);
+                } else {
+                    checkAuth();
+                }
+            } catch (error) {
+                console.error('Sign in error:', error);
+                alert('Login error: ' + error.message);
+            }
+        }
+
+        async function signUp() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                alert('Please enter email and password');
+                return;
+            }
+
+            if (password.length < 6) {
+                alert('Password must be at least 6 characters');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        emailRedirectTo: window.location.origin
+                    }
+                });
+                if (error) {
+                    alert('Sign up failed: ' + error.message);
+                } else {
+                    alert('Account created! You can now sign in.');
+                }
+            } catch (error) {
+                console.error('Sign up error:', error);
+                alert('Sign up error: ' + error.message);
+            }
+        }
+
+        async function signOut() {
+            await supabase.auth.signOut();
+            location.reload();
+        }
+
+        async function loadSessions() {
+            const { data, error } = await supabase.from('sessions').select('*').order('start_time', { ascending: false });
+            if (error) {
+                console.error('Load sessions error:', error);
+                alert('Failed to load sessions: ' + error.message);
+                return;
+            }
+            allSessions = data || [];
+            displaySessions(allSessions);
+        }
+
+        function displaySessions(sessions) {
+            const list = document.getElementById('sessionsList');
+            if (sessions.length === 0) {
+                list.innerHTML = '<p style="text-align:center;color:#666;padding:40px;">No sessions yet. Record one in the iOS app!</p>';
+                return;
+            }
+            list.innerHTML = sessions.map(s => `
+                <div class="session" onclick="showSession(${s.id})">
+                    <div class="session-title">${s.title || 'Untitled Session'}</div>
+                    <div class="session-meta">${new Date(s.start_time).toLocaleString()} • ${Math.round(s.duration)}s</div>
+                    <div class="session-transcript">${s.transcript.substring(0, 150)}...</div>
+                </div>
+            `).join('');
+        }
+
+        function filterSessions() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allSessions.filter(s =>
+                (s.title || '').toLowerCase().includes(query) ||
+                s.transcript.toLowerCase().includes(query)
+            );
+            displaySessions(filtered);
+        }
+
+        async function showSession(id) {
+            const session = allSessions.find(s => s.id == id);
+
+            let audioPlayer = '';
+            if (session.audio_path) {
+                const { data: { session: authSession } } = await supabase.auth.getSession();
+                const { data } = await supabase.storage.from('audio-recordings').createSignedUrl(session.audio_path, 3600);
+                if (data?.signedUrl) {
+                    audioPlayer = `
+                        <div style="margin:20px 0;padding:15px;background:#f5f5f5;border-radius:8px;">
+                            <audio controls style="width:100%;">
+                                <source src="${data.signedUrl}" type="audio/mp4">
+                                Your browser does not support audio playback.
+                            </audio>
+                        </div>
+                    `;
+                }
+            }
+
+            document.getElementById('sessionDetail').innerHTML = `
+                <h2>${session.title || 'Untitled Session'}</h2>
+                <p style="color:#666;margin:10px 0;">${new Date(session.start_time).toLocaleString()} • ${Math.round(session.duration)}s</p>
+                ${audioPlayer}
+                <h3 style="margin-top:20px;">Transcript</h3>
+                <p style="line-height:1.8;margin-top:10px;">${session.transcript}</p>
+                ${session.analysis ? `
+                    <h3 style="margin-top:20px;">Analysis</h3>
+                    <p style="margin-top:10px;"><strong>Summary:</strong> ${session.analysis.summary}</p>
+                    <p style="margin-top:10px;"><strong>Keywords:</strong> ${session.analysis.keywords.join(', ')}</p>
+                ` : ''}
+                <button class="delete-btn" onclick="deleteSession(${session.id})">Delete Session</button>
+            `;
+            document.getElementById('sessionModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('sessionModal').classList.remove('active');
+        }
+
+        async function deleteSession(id) {
+            if (!confirm('Delete this session?')) return;
+            const { error } = await supabase.from('sessions').delete().eq('id', id);
+            if (error) { alert(error.message); return; }
+            closeModal();
+            loadSessions();
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>

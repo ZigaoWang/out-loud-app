@@ -13,6 +13,7 @@ enum DashboardTheme {
 
 struct DashboardView: View {
     @StateObject private var sessionManager = SessionManager.shared
+    @StateObject private var supabase = SupabaseService.shared
     @State private var navigateToSession = false
 
     var body: some View {
@@ -46,8 +47,28 @@ struct DashboardView: View {
                 }
             }
             .navigationBarHidden(true)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        Task {
+                            try? await supabase.signOut()
+                        }
+                    }) {
+                        Text("Logout")
+                            .foregroundColor(.red)
+                    }
+                }
+            }
         }
         .navigationViewStyle(.stack)
+        .onAppear {
+            Task {
+                await sessionManager.loadSessions()
+            }
+        }
+        .refreshable {
+            await sessionManager.loadSessions()
+        }
     }
 
     private var adaptivePadding: CGFloat {
@@ -61,14 +82,28 @@ struct DashboardView: View {
     // MARK: - Header
 
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Out Loud")
-                .font(.system(size: 42, weight: .bold, design: .rounded))
-                .foregroundColor(DashboardTheme.textPrimary)
+        HStack {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Out Loud")
+                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                    .foregroundColor(DashboardTheme.textPrimary)
 
-            Text("Speak to learn. Think out loud.")
-                .font(.system(size: 17))
-                .foregroundColor(DashboardTheme.textSecondary.opacity(0.8))
+                Text("Speak to learn. Think out loud.")
+                    .font(.system(size: 17))
+                    .foregroundColor(DashboardTheme.textSecondary.opacity(0.8))
+            }
+
+            Spacer()
+
+            Button(action: {
+                Task {
+                    try? await supabase.signOut()
+                }
+            }) {
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                    .font(.system(size: 20))
+                    .foregroundColor(.red)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 30)

@@ -4,6 +4,9 @@ import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
 import { config } from '../config';
 import { TranscriptionController } from './controllers/transcription.controller';
+import authRoutes from './routes/auth.routes';
+import sessionsRoutes from './routes/sessions.routes';
+import uploadRoutes from './routes/upload.routes';
 
 const app = express();
 const server = createServer(app);
@@ -18,6 +21,11 @@ app.use(express.json());
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// API routes
+app.use('/auth', authRoutes);
+app.use('/sessions', sessionsRoutes);
+app.use('/upload', uploadRoutes);
 
 // WebSocket connection handler
 wss.on('connection', (ws: WebSocket, req) => {

@@ -14,4 +14,9 @@ export const config = {
     baseUrl: (process.env.OPENAI_BASE_URL || 'https://api.uniapi.io') + '/v1',
     model: 'gpt-4.1',  // UniAPI model
   },
+  supabase: {
+    url: process.env.SUPABASE_URL || '',
+    serviceKey: process.env.SUPABASE_SERVICE_KEY || '',
+    anonKey: process.env.SUPABASE_ANON_KEY || '',
+  },
 };

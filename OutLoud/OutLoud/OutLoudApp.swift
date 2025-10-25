@@ -2,9 +2,15 @@ import SwiftUI
 
 @main
 struct OutLoudApp: App {
+    @StateObject private var supabase = SupabaseService.shared
+
     var body: some Scene {
         WindowGroup {
-            DashboardView()
+            if supabase.isAuthenticated {
+                DashboardView()
+            } else {
+                AuthView()
+            }
         }
     }
 }

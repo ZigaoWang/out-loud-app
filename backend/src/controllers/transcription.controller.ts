@@ -1,6 +1,7 @@
 import { WebSocket } from 'ws';
 import { SonioxService } from '../services/soniox.service';
 import { AIService } from '../services/ai.service';
+import { SupabaseService } from '../services/supabase.service';
 
 interface TranscriptWord {
   word: string;
@@ -22,9 +23,13 @@ interface Session {
 export class TranscriptionController {
   private sessions: Map<string, Session> = new Map();
   private aiService: AIService;
+  private supabaseService: SupabaseService;
+  private userId?: string;
 
-  constructor() {
+  constructor(userId?: string) {
     this.aiService = new AIService();
+    this.supabaseService = new SupabaseService();
+    this.userId = userId;
   }
 
   async handleConnection(ws: WebSocket, sessionId: string) {
@@ -161,6 +166,25 @@ export class TranscriptionController {
         data: analysisWithTitle,
         words: session.words, // Include word-level timestamps
       }));
+
+      // Save to Supabase if user is authenticated
+      if (this.userId) {
+        try {
+          await this.supabaseService.saveSession(this.userId, {
+            id: sessionId,
+            transcript,
+            transcriptSegments: session.words,
+            startTime: new Date(session.startTime).toISOString(),
+            endTime: new Date().toISOString(),
+            duration,
+            analysis: analysisWithTitle,
+            title: title,
+          });
+          console.log('✅ Session saved to Supabase');
+        } catch (error) {
+          console.error('Failed to save to Supabase:', error);
+        }
+      }
     } catch (error) {
       console.error('AI analysis failed:', error);
 
