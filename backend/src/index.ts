@@ -1,9 +1,12 @@
 import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { config } from '../config';
 import { TranscriptionController } from './controllers/transcription.controller';
+import { SupabaseService } from './services/supabase.service';
 import authRoutes from './routes/auth.routes';
 import sessionsRoutes from './routes/sessions.routes';
 import uploadRoutes from './routes/upload.routes';
@@ -13,8 +16,36 @@ const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
 const transcriptionController = new TranscriptionController();
+const supabaseService = new SupabaseService();
 
-app.use(cors());
+const allowedOrigins = config.security.allowedOrigins
+  ? config.security.allowedOrigins
+      .split(',')
+      .map(origin => origin.trim())
+      .filter(Boolean)
+  : [];
+
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+};
+
+const apiRateLimiter = rateLimit({
+  windowMs: config.security.rateLimitWindowMs,
+  max: config.security.rateLimitMax,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(helmet());
+app.use(cors(corsOptions));
+app.use(apiRateLimiter);
 app.use(express.json());
 
 // Health check
@@ -28,13 +59,38 @@ app.use('/sessions', sessionsRoutes);
 app.use('/upload', uploadRoutes);
 
 // WebSocket connection handler
-wss.on('connection', (ws: WebSocket, req) => {
+wss.on('connection', async (ws: WebSocket, req) => {
   const url = new URL(req.url!, `http://${req.headers.host}`);
   const sessionId = url.searchParams.get('sessionId') || `session_${Date.now()}`;
 
-  console.log(`New WebSocket connection: ${sessionId}`);
+  const authHeader = req.headers['authorization'];
+  const rawToken = Array.isArray(authHeader) ? authHeader[0] : authHeader;
 
-  transcriptionController.handleConnection(ws, sessionId);
+  if (!rawToken || !rawToken.toLowerCase().startsWith('bearer ')) {
+    ws.send(JSON.stringify({ type: 'error', message: 'Unauthorized WebSocket connection' }));
+    ws.close(1008, 'Unauthorized');
+    return;
+  }
+
+  const accessToken = rawToken.replace(/^[Bb]earer\s+/, '');
+
+  try {
+    const { data, error } = await supabaseService.verifyToken(accessToken);
+
+    if (error || !data?.user?.id) {
+      ws.send(JSON.stringify({ type: 'error', message: 'Invalid or expired token' }));
+      ws.close(1008, 'Unauthorized');
+      return;
+    }
+
+    console.log(`New WebSocket connection: ${sessionId} (user: ${data.user.id})`);
+
+    transcriptionController.handleConnection(ws, sessionId, data.user.id);
+  } catch (err) {
+    console.error('WebSocket auth error:', err);
+    ws.send(JSON.stringify({ type: 'error', message: 'Authentication failed' }));
+    ws.close(1011, 'Authentication failed');
+  }
 });
 
 server.listen(config.port, () => {

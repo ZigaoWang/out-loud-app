@@ -18,21 +18,20 @@ interface Session {
   clientWs: WebSocket;
   sentFinalTexts: Set<string>;
   words: TranscriptWord[];
+  userId?: string;
 }
 
 export class TranscriptionController {
   private sessions: Map<string, Session> = new Map();
   private aiService: AIService;
   private supabaseService: SupabaseService;
-  private userId?: string;
 
-  constructor(userId?: string) {
+  constructor() {
     this.aiService = new AIService();
     this.supabaseService = new SupabaseService();
-    this.userId = userId;
   }
 
-  async handleConnection(ws: WebSocket, sessionId: string) {
+  async handleConnection(ws: WebSocket, sessionId: string, userId?: string) {
     const sonioxService = new SonioxService();
 
     const session: Session = {
@@ -44,6 +43,7 @@ export class TranscriptionController {
       clientWs: ws,
       sentFinalTexts: new Set(),
       words: [],
+      userId,
     };
 
     this.sessions.set(sessionId, session);
@@ -168,9 +168,9 @@ export class TranscriptionController {
       }));
 
       // Save to Supabase if user is authenticated
-      if (this.userId) {
+      if (session.userId) {
         try {
-          await this.supabaseService.saveSession(this.userId, {
+          await this.supabaseService.saveSession(session.userId, {
             id: sessionId,
             transcript,
             transcriptSegments: session.words,

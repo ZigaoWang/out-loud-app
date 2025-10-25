@@ -8,6 +8,7 @@ class SupabaseService: ObservableObject {
     @Published var currentUser: User?
 
     private let client: SupabaseClient
+    private let defaultBackendURL: String?
 
     init() {
         // Load from Config.plist (gitignored)
@@ -23,6 +24,7 @@ class SupabaseService: ObservableObject {
             supabaseURL: supabaseURL,
             supabaseKey: supabaseKey
         )
+        self.defaultBackendURL = config["BACKEND_URL"] as? String
         checkAuth()
     }
 
@@ -67,7 +69,6 @@ class SupabaseService: ObservableObject {
     }
 
     func uploadAudio(sessionId: String, fileURL: URL) async throws -> String {
-        // Refresh session if needed
         let session = try await client.auth.session
         guard !session.accessToken.isEmpty else {
             throw NSError(domain: "Session expired", code: 401)
@@ -75,9 +76,18 @@ class SupabaseService: ObservableObject {
 
         let data = try Data(contentsOf: fileURL)
 
-        var request = URLRequest(url: URL(string: "http://localhost:3000/upload/audio")!)
+        // Use environment variable, Info.plist, or fallback Config.plist for backend URL
+        guard let backendURLString = ProcessInfo.processInfo.environment["BACKEND_URL"]
+                ?? Bundle.main.object(forInfoDictionaryKey: "BACKEND_URL") as? String
+                ?? defaultBackendURL,
+              let backendURL = URL(string: backendURLString) else {
+            throw NSError(domain: "Missing BACKEND_URL", code: 500)
+        }
+
+        var request = URLRequest(url: backendURL.appendingPathComponent("upload/audio"))
         request.httpMethod = "POST"
         request.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 60
 
         let boundary = UUID().uuidString
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
@@ -94,18 +104,46 @@ class SupabaseService: ObservableObject {
 
         request.httpBody = body
 
-        let (responseData, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw NSError(domain: "Upload failed", code: (response as? HTTPURLResponse)?.statusCode ?? 500)
+        // Retry logic
+        var lastError: Error?
+        for attempt in 1...3 {
+            do {
+                let (responseData, response) = try await URLSession.shared.data(for: request)
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw NSError(domain: "Invalid response", code: 500)
+                }
+
+                if httpResponse.statusCode == 200 {
+                    let result = try JSONDecoder().decode([String: String].self, from: responseData)
+                    guard let path = result["path"] else {
+                        throw NSError(domain: "No path in response", code: 500)
+                    }
+                    print("✅ Audio uploaded: \(path)")
+                    return path
+                } else if httpResponse.statusCode >= 500 && attempt < 3 {
+                    // Retry on server errors
+                    try await Task.sleep(nanoseconds: UInt64(attempt * 1_000_000_000))
+                    continue
+                } else {
+                    throw NSError(domain: "Upload failed", code: httpResponse.statusCode)
+                }
+            } catch {
+                lastError = error
+                if attempt < 3 {
+                    try await Task.sleep(nanoseconds: UInt64(attempt * 1_000_000_000))
+                }
+            }
         }
 
-        let result = try JSONDecoder().decode([String: String].self, from: responseData)
-        guard let path = result["path"] else {
-            throw NSError(domain: "No path in response", code: 500)
-        }
+        throw lastError ?? NSError(domain: "Upload failed", code: 500)
+    }
 
-        print("✅ Audio uploaded: \(path)")
-        return path
+    func currentAccessToken() async throws -> String {
+        let session = try await client.auth.session
+        if session.accessToken.isEmpty {
+            throw NSError(domain: "Session expired", code: 401)
+        }
+        return session.accessToken
     }
 
     func getAudioURL(path: String) -> URL? {

@@ -15,6 +15,7 @@ class SessionViewModel: ObservableObject {
     private var session: Session
     private let audioService: AudioRecordingService
     private let webSocketService: WebSocketService
+    private let supabaseService: SupabaseService
     private var captionTimer: Timer?
     private var durationTimer: Timer?
     private var recordingPreparationWorkItem: DispatchWorkItem?
@@ -26,10 +27,15 @@ class SessionViewModel: ObservableObject {
     private var lastCaptionTime: Date?
     private var previousCaption: String = ""
 
-    init(serverURL: String = "ws://localhost:3000", parentSessionId: String? = nil) {
+    init(
+        serverURL: String = "wss://api.out-loud.app",
+        parentSessionId: String? = nil,
+        supabaseService: SupabaseService = .shared
+    ) {
         self.session = Session()
         self.audioService = AudioRecordingService()
         self.webSocketService = WebSocketService(serverURL: serverURL)
+        self.supabaseService = supabaseService
         self.parentSessionId = parentSessionId
 
         setupServices()
@@ -111,13 +117,33 @@ class SessionViewModel: ObservableObject {
     }
 
     func startSession() {
+        guard supabaseService.isAuthenticated else {
+            errorMessage = "Please sign in before starting a session."
+            state = .idle
+            return
+        }
+
         state = .preparing
         session.startTime = Date()
         elapsedTime = 0
         fullTranscript = ""
         isIgnoringInitialTranscript = true
         startDurationTimer()
-        webSocketService.connect(sessionId: session.id)
+
+        Task {
+            do {
+                let token = try await supabaseService.currentAccessToken()
+                await MainActor.run {
+                    self.webSocketService.connect(sessionId: self.session.id, token: token)
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = "Session expired. Please sign in again."
+                    self.state = .idle
+                    self.stopDurationTimer()
+                }
+            }
+        }
     }
 
     func stopSession() {

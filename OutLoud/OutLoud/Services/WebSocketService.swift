@@ -13,11 +13,11 @@ class WebSocketService: WebSocketDelegate {
     var onAnalysis: ((AnalysisResult, [TranscriptWord]?) -> Void)?
     var onError: ((String) -> Void)?
 
-    init(serverURL: String = "ws://localhost:3000") {
+    init(serverURL: String = "wss://api.out-loud.app") {
         self.serverURL = serverURL
     }
 
-    func connect(sessionId: String) {
+    func connect(sessionId: String, token: String) {
         let urlString = "\(serverURL)?sessionId=\(sessionId)"
         guard let url = URL(string: urlString) else {
             onError?("Invalid URL")
@@ -26,6 +26,7 @@ class WebSocketService: WebSocketDelegate {
 
         var request = URLRequest(url: url)
         request.timeoutInterval = 5
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         socket = WebSocket(request: request)
         socket?.delegate = self

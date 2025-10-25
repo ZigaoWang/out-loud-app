@@ -16,9 +16,10 @@ CREATE TABLE sessions (
   UNIQUE(user_id, session_id)
 );
 
--- Create index for faster queries
+-- Create indexes for faster queries
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX idx_sessions_start_time ON sessions(start_time DESC);
+CREATE INDEX idx_sessions_user_start ON sessions(user_id, start_time DESC);
 
 -- Enable Row Level Security
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;

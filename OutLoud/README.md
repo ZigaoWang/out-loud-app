@@ -59,13 +59,15 @@ SwiftUI-based iOS app for speech-based learning.
 
 ### Server URL
 
-Update in `SessionViewModel.swift`:
+Production builds default to the hosted backend at `wss://api.out-loud.app`:
 ```swift
-init(mode: SessionMode, serverURL: String = "ws://YOUR_SERVER:3000")
+init(mode: SessionMode, serverURL: String = "wss://api.out-loud.app")
 ```
 
-For local testing: `ws://localhost:3000`
-For device testing: `ws://YOUR_COMPUTER_IP:3000`
+For local testing override the parameter to `ws://localhost:3799` (or your custom port).
+For on-network device testing use `ws://YOUR_COMPUTER_IP:3799`.
+
+> WebSocket connections now require a valid Supabase session token. Users must be signed in through the in-app authentication flow before starting a recording.
 
 ### Audio Format
 
@@ -84,10 +86,10 @@ This matches Soniox API requirements.
 
 3. **Select your device** in Xcode
 
-4. **Update server URL** to your computer's IP:
+4. **Update server URL** to your computer's IP when testing locally:
    ```swift
-   // In SessionViewModel.swift
-   private let serverURL = "ws://192.168.1.XXX:3000"
+   // In SessionViewModel.swift when overriding for local testing
+   private let serverURL = "ws://192.168.1.XXX:3799"
    ```
 
 5. **Trust developer certificate** on device (Settings → General → VPN & Device Management)

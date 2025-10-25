@@ -3,7 +3,12 @@ import multer from 'multer';
 import { supabase } from '../services/supabase.service';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
+
+// File size limit: 50MB
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }
+});
 
 router.post('/audio', upload.single('audio'), async (req, res) => {
   try {
@@ -21,6 +26,11 @@ router.post('/audio', upload.single('audio'), async (req, res) => {
 
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Validate file type
+    if (!req.file.mimetype.startsWith('audio/')) {
+      return res.status(400).json({ error: 'Invalid file type' });
     }
 
     const sessionId = req.body.sessionId || Date.now().toString();

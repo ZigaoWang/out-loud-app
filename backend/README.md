@@ -35,11 +35,24 @@ npm run build
 npm start
 ```
 
+### Environment
+
+Configure security-related environment variables before deploying:
+
+- `ALLOWED_ORIGINS`: Comma-separated list of origins allowed via CORS (leave empty to allow all in local dev)
+- `RATE_LIMIT_WINDOW_MS`: Optional window override for rate limiting (default 900000 / 15 minutes)
+- `RATE_LIMIT_MAX`: Optional max requests per window for rate limiting (default 100)
+
 ## API Endpoints
 
 ### WebSocket Connection
 
-Connect to: `ws://localhost:3000?sessionId=xxx&mode=solo`
+Connect to: `wss://api.out-loud.app?sessionId=xxx&mode=solo`
+
+For local development use: `ws://localhost:3799?sessionId=xxx&mode=solo`
+
+**Headers:**
+- `Authorization: Bearer <Supabase session access token>` (required)
 
 **Query Parameters:**
 - `sessionId`: Unique session identifier (optional, auto-generated if not provided)
