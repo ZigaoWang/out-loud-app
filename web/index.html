@@ -136,6 +136,181 @@
       box-shadow: 0 1px 6px rgba(15, 23, 42, 0.1);
     }
 
+    .status-banner {
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 14px 18px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid transparent;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .status-banner.success {
+      background: rgba(22, 163, 74, 0.12);
+      border-color: rgba(22, 163, 74, 0.22);
+      color: #15803d;
+    }
+
+    .status-banner.error {
+      background: rgba(220, 38, 38, 0.12);
+      border-color: rgba(220, 38, 38, 0.24);
+      color: #b91c1c;
+    }
+
+    .status-banner.info {
+      background: rgba(37, 99, 235, 0.12);
+      border-color: rgba(37, 99, 235, 0.24);
+      color: #1d4ed8;
+    }
+
+    .status-panel {
+      max-width: 640px;
+      width: 100%;
+      margin: 0 auto 28px;
+      padding: 26px 32px;
+      border-radius: var(--radius-lg);
+      background: var(--bg-surface);
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      display: none;
+    }
+
+    .status-panel.active {
+      display: block;
+    }
+
+    .status-panel h2 {
+      margin: 0 0 12px;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .status-panel p {
+      margin: 0 0 22px;
+      color: var(--text-secondary);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .status-panel .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .status-panel .actions .btn {
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .status-panel .btn.primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.25);
+    }
+
+    .status-panel .btn.secondary {
+      background: rgba(15, 23, 42, 0.04);
+      color: var(--text-primary);
+      border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .hidden-panel {
+      display: none !important;
+    }
+
+    body.status-only .panel-grid {
+      display: none;
+    }
+
+    body.status-only .top-bar {
+      display: none;
+    }
+
+    .status-panel.recovery h2 {
+      margin-bottom: 18px;
+    }
+
+    .recovery-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .recovery-form .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .recovery-form .input-group label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .recovery-form .input-group input {
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-size: 15px;
+      background: #fff;
+    }
+
+    .recovery-form .input-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .recovery-form .btn.primary {
+      align-self: flex-start;
+      padding: 12px 20px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24);
+    }
+
+    .panel-alert {
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      border: 1px solid transparent;
+    }
+
+    .panel-alert.error {
+      background: rgba(220, 38, 38, 0.12);
+      border-color: rgba(220, 38, 38, 0.2);
+      color: #b91c1c;
+    }
+
+    .panel-alert.success {
+      background: rgba(22, 163, 74, 0.12);
+      border-color: rgba(22, 163, 74, 0.2);
+      color: #15803d;
+    }
+
     form {
       display: flex;
       flex-direction: column;
@@ -270,6 +445,12 @@
       background: rgba(22, 163, 74, 0.08);
       border-color: rgba(22, 163, 74, 0.18);
       color: #15803d;
+    }
+
+    .alert.info {
+      background: rgba(37, 99, 235, 0.08);
+      border-color: rgba(37, 99, 235, 0.18);
+      color: #1d4ed8;
     }
 
     .hidden { display: none !important; }
@@ -458,6 +639,9 @@
 </head>
 <body>
   <div class="layout">
+    <div id="statusBanner" class="status-banner hidden"></div>
+    <div id="statusPanel" class="status-panel"></div>
+
     <header class="top-bar">
       <div class="brand">
         <h1>Out Loud Admin</h1>
@@ -501,6 +685,7 @@
         </form>
 
         <button class="btn link" id="forgotPasswordBtn" type="button">Forgot password?</button>
+        <button class="btn link hidden" id="resendConfirmBtn" type="button">Resend confirmation email</button>
         <div class="alert hidden" id="authAlert"></div>
       </section>
 
@@ -558,7 +743,7 @@
 
   <script>
     const passwordRules = [
-      { id: 'length', label: 'At least 12 characters', test: value => value.length >= 12 },
+      { id: 'length', label: 'At least 8 characters', test: value => value.length >= 8 },
       { id: 'lower', label: 'Lowercase letter', test: value => /[a-z]/.test(value) },
       { id: 'upper', label: 'Uppercase letter', test: value => /[A-Z]/.test(value) },
       { id: 'digit', label: 'Number', test: value => /\d/.test(value) },
@@ -572,7 +757,9 @@
       sessions: [],
       activeSession: null,
       passwordRecovery: false,
+      pendingResendEmail: null,
     };
+    let authTemporarilyHidden = false;
 
     document.addEventListener('DOMContentLoaded', () => {
       cacheElements();
@@ -583,6 +770,8 @@
     });
 
     function cacheElements() {
+      ui.statusBanner = document.getElementById('statusBanner');
+      ui.statusPanel = document.getElementById('statusPanel');
       ui.authPanel = document.getElementById('authPanel');
       ui.appPanel = document.getElementById('appPanel');
       ui.authTabs = Array.from(document.querySelectorAll('.auth-tab'));
@@ -593,6 +782,7 @@
       ui.passwordHelper = document.getElementById('passwordHelper');
       ui.passwordChecklist = document.getElementById('passwordChecklist');
       ui.forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
+      ui.resendConfirmBtn = document.getElementById('resendConfirmBtn');
       ui.authAlert = document.getElementById('authAlert');
       ui.userActions = document.getElementById('userActions');
       ui.signOutBtn = document.getElementById('signOutBtn');
@@ -623,6 +813,7 @@
       });
 
       ui.forgotPasswordBtn.addEventListener('click', handleForgotPassword);
+      ui.resendConfirmBtn.addEventListener('click', handleResendConfirmation);
       ui.signOutBtn.addEventListener('click', handleSignOut);
       ui.searchInput.addEventListener('input', filterSessions);
       ui.cancelResetBtn.addEventListener('click', hideResetModal);
@@ -641,6 +832,413 @@
       });
     }
 
+    function showStatus(message, type = 'info') {
+      if (!ui.statusBanner) return;
+      hideStatusPanel();
+      ui.statusBanner.textContent = message;
+      ui.statusBanner.classList.remove('hidden', 'success', 'error', 'info');
+      ui.statusBanner.classList.add(type);
+    }
+
+    function hideStatus() {
+      if (!ui.statusBanner) return;
+      ui.statusBanner.classList.add('hidden');
+      ui.statusBanner.classList.remove('success', 'error', 'info');
+    }
+
+    function showStatusPanel({ title, message, actions = [], hideAuth = false }) {
+      if (!ui.statusPanel) return;
+      ui.statusPanel.classList.remove('recovery');
+      ui.statusPanel.innerHTML = `
+        <div class="panel-content">
+          <h2>${title}</h2>
+          <p>${message}</p>
+          <div class="actions">
+            ${actions.map(action => `
+              <button class="btn ${action.variant || 'primary'}" data-action="${action.id}">
+                ${action.label}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      ui.statusPanel.classList.add('active');
+      hideStatus();
+
+      if (hideAuth) {
+        hideAuthPanels();
+        document.body.classList.add('status-only');
+      } else {
+        restoreAuthPanels();
+        document.body.classList.remove('status-only');
+      }
+
+      const buttons = ui.statusPanel.querySelectorAll('button[data-action]');
+      buttons.forEach(button => {
+        const id = button.getAttribute('data-action');
+        const action = actions.find(item => item.id === id);
+        if (action && typeof action.onClick === 'function') {
+          button.addEventListener('click', action.onClick, { once: true });
+        }
+      });
+    }
+
+    function hideStatusPanel() {
+      if (!ui.statusPanel) return;
+      ui.statusPanel.classList.remove('active');
+      ui.statusPanel.classList.remove('recovery');
+      ui.statusPanel.innerHTML = '';
+      document.body.classList.remove('status-only');
+      restoreAuthPanels();
+      state.passwordRecovery = false;
+    }
+
+    function hideAuthPanels() {
+      if (authTemporarilyHidden) return;
+      authTemporarilyHidden = true;
+      ui.authPanel?.classList.add('hidden-panel');
+      ui.appPanel?.classList.add('hidden-panel');
+      ui.userActions?.classList.add('hidden-panel');
+    }
+
+    function restoreAuthPanels() {
+      if (!authTemporarilyHidden) return;
+      ui.authPanel?.classList.remove('hidden-panel');
+      ui.appPanel?.classList.remove('hidden-panel');
+      ui.userActions?.classList.remove('hidden-panel');
+      authTemporarilyHidden = false;
+    }
+
+    async function handleResendConfirmation() {
+      if (!state.pendingResendEmail) return;
+
+      const email = state.pendingResendEmail;
+      ui.resendConfirmBtn.disabled = true;
+      ui.resendConfirmBtn.textContent = 'Sending…';
+
+      try {
+        const { error } = await state.supabase.auth.resend({
+          type: 'signup',
+          email,
+        });
+        if (error) throw error;
+
+        displayAlert(ui.authAlert, `Confirmation email sent to ${email}.`, 'success');
+        ui.resendConfirmBtn.classList.add('hidden');
+        state.pendingResendEmail = null;
+      } catch (error) {
+        displayAlert(ui.authAlert, error.message || 'Unable to resend confirmation email.', 'error');
+      } finally {
+        ui.resendConfirmBtn.disabled = false;
+        ui.resendConfirmBtn.textContent = 'Resend confirmation email';
+      }
+    }
+
+    function showRecoveryPanel() {
+      if (!ui.statusPanel) return;
+      state.passwordRecovery = true;
+      hideStatus();
+      hideAuthPanels();
+      document.body.classList.add('status-only');
+
+      ui.statusPanel.classList.add('active', 'recovery');
+      ui.statusPanel.innerHTML = `
+        <div class="panel-content recovery">
+          <h2>Reset Your Password</h2>
+          <p>Set a new password to regain access to Out Loud.</p>
+          <form id="recoveryForm" class="recovery-form">
+            <div id="recoveryAlert" class="panel-alert hidden"></div>
+            <div class="input-group">
+              <label for="newPasswordInline">New password</label>
+              <input id="newPasswordInline" type="password" autocomplete="new-password" placeholder="Enter new password" />
+            </div>
+            <div class="input-group">
+              <label for="confirmPasswordInline">Confirm password</label>
+              <input id="confirmPasswordInline" type="password" autocomplete="new-password" placeholder="Confirm new password" />
+            </div>
+            <div class="actions">
+              <button type="submit" class="btn primary">Update Password</button>
+              <button type="button" class="btn secondary" id="recoveryCancel">Cancel</button>
+            </div>
+          </form>
+        </div>
+      `;
+
+      const form = document.getElementById('recoveryForm');
+      const alertBox = document.getElementById('recoveryAlert');
+      const newPasswordInput = document.getElementById('newPasswordInline');
+      const confirmInput = document.getElementById('confirmPasswordInline');
+      const cancelButton = document.getElementById('recoveryCancel');
+      const submitButton = form.querySelector('button[type="submit"]');
+
+      const showPanelAlert = (message, type = 'error') => {
+        alertBox.textContent = message;
+        alertBox.className = `panel-alert ${type}`;
+        alertBox.classList.remove('hidden');
+      };
+
+      const hidePanelAlert = () => {
+        alertBox.classList.add('hidden');
+        alertBox.textContent = '';
+      };
+
+      cancelButton.addEventListener('click', () => {
+        hideStatusPanel();
+        setAuthMode('sign-in');
+      });
+
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        hidePanelAlert();
+
+        const newPassword = newPasswordInput.value;
+        const confirmPassword = confirmInput.value;
+
+        if (!validatePassword(newPassword)) {
+          showPanelAlert('Password must meet all requirements.');
+          return;
+        }
+
+        if (newPassword !== confirmPassword) {
+          showPanelAlert('Passwords do not match.');
+          return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Updating…';
+
+        try {
+          const { error } = await state.supabase.auth.updateUser({ password: newPassword });
+          if (error) throw error;
+
+          showStatusPanel({
+            title: 'Password Updated',
+            message: 'Your password has been updated. You can now sign in with your new credentials.',
+            actions: [
+              {
+                id: 'signin',
+                label: 'Sign In on Web',
+                onClick: () => {
+                  hideStatusPanel();
+                  restoreAuthPanels();
+                  setAuthMode('sign-in');
+                }
+              }
+            ]
+          });
+          await checkAuth();
+        } catch (error) {
+          showPanelAlert(error.message || 'Unable to update password.');
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Update Password';
+        }
+      });
+
+      newPasswordInput.focus();
+    }
+
+    function clearAuthParams() {
+      const url = new URL(window.location.href);
+      const keys = ['access_token', 'refresh_token', 'expires_in', 'token_type', 'type', 'code', 'error', 'error_code', 'error_description', 'reset'];
+      keys.forEach(key => url.searchParams.delete(key));
+      url.hash = '';
+      window.history.replaceState({}, document.title, url.toString());
+    }
+
+    async function handleAuthRedirect() {
+      const searchParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const params = hashParams.get('type') ? hashParams : searchParams.get('type') ? searchParams : null;
+      const code = searchParams.get('code');
+
+      if (!params && !code) {
+        const resetFlag = searchParams.get('reset');
+        if (resetFlag === '1') {
+          showStatusPanel({
+            title: 'Password Reset Email Sent',
+            message: 'Check your inbox for the password reset link. Once you update your password you can sign in again.',
+            actions: [
+              {
+                id: 'signin',
+                label: 'Sign In on Web',
+                onClick: () => {
+                  hideStatusPanel();
+                  restoreAuthPanels();
+                  setAuthMode('sign-in');
+                }
+              },
+              {
+                id: 'close',
+                label: 'Close Window',
+                variant: 'secondary',
+                onClick: () => {
+                  hideResetModal();
+                  hideStatusPanel();
+                }
+              }
+            ]
+          });
+          clearAuthParams();
+        }
+        return;
+      }
+
+      if (window.location.pathname !== '/status.html') {
+        const query = window.location.search;
+        const hash = window.location.hash;
+        window.location.replace(`/status.html${query}${hash}`);
+        return;
+      }
+
+      if (code) {
+        showStatusPanel({
+          title: 'Confirming Your Email…',
+          message: 'Hang tight while we verify your link.',
+          actions: [],
+          hideAuth: true
+        });
+
+        try {
+          const { data, error } = await state.supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          if (data?.session) {
+            showStatusPanel({
+              title: 'Email Confirmed ✉️',
+              message: 'Your account is ready. You can safely close this tab and continue in the Out Loud app, or sign in here to review your sessions.',
+              actions: [
+                {
+                  id: 'signin',
+                  label: 'Sign In on Web',
+                  onClick: () => {
+                    hideStatusPanel();
+                    restoreAuthPanels();
+                    setAuthMode('sign-in');
+                  }
+                },
+                {
+                  id: 'close',
+                  label: 'Close Window',
+                  variant: 'secondary',
+                  onClick: () => {
+                    hideStatusPanel();
+                    window.close();
+                  }
+                }
+              ],
+              hideAuth: true
+            });
+          }
+        } catch (error) {
+          showStatusPanel({
+            title: 'Confirmation Failed',
+            message: error.message || 'We could not verify the email link. Try requesting a new confirmation email or contact support.',
+            actions: [
+              {
+                id: 'retry',
+                label: 'Back to Sign In',
+                onClick: () => {
+                  hideStatusPanel();
+                  restoreAuthPanels();
+                  setAuthMode('sign-in');
+                }
+              }
+            ],
+            hideAuth: true
+          });
+        }
+
+        clearAuthParams();
+        return;
+      }
+
+      const type = params.get('type');
+      const errorDescription = params.get('error_description');
+
+      if (errorDescription) {
+        const errorCode = params.get('error_code');
+        const message = errorCode === 'otp_expired'
+          ? 'This link has expired. Request a new confirmation email or reset your password.'
+          : errorDescription;
+
+        showStatusPanel({
+          title: errorCode === 'otp_expired' ? 'Link Expired' : 'Link Error',
+          message,
+          actions: [
+            {
+              id: 'signin',
+              label: 'Back to Sign In',
+              onClick: () => {
+                hideStatusPanel();
+                setAuthMode('sign-in');
+              }
+            },
+            {
+              id: 'reset',
+              label: 'Reset Password',
+              onClick: () => {
+                showRecoveryPanel();
+              }
+            }
+          ],
+          hideAuth: true
+        });
+        clearAuthParams();
+        return;
+      }
+
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+
+      if (accessToken && refreshToken) {
+        try {
+          const { error } = await state.supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) throw error;
+        } catch (error) {
+          showStatus(error.message || 'Unable to verify the authentication link. Please try again.', 'error');
+          clearAuthParams();
+          return;
+        }
+      }
+
+      if (type === 'signup') {
+        showStatusPanel({
+          title: 'Email Confirmed ✉️',
+          message: 'Your account is ready. You can safely close this tab and continue in the Out Loud app, or sign in here to review your sessions.',
+          actions: [
+            {
+              id: 'signin',
+              label: 'Sign In on Web',
+              onClick: () => {
+                hideStatusPanel();
+                restoreAuthPanels();
+                setAuthMode('sign-in');
+              }
+            },
+            {
+              id: 'close',
+              label: 'Close Window',
+              variant: 'secondary',
+              onClick: () => {
+                hideStatusPanel();
+                window.close();
+              }
+            }
+          ],
+          hideAuth: true
+        });
+        setAuthMode('sign-in');
+      } else if (type === 'recovery') {
+        showRecoveryPanel();
+      }
+
+      clearAuthParams();
+    }
+
     async function bootstrapSupabase() {
       try {
         const response = await fetch('config.json');
@@ -648,6 +1246,7 @@
         const { createClient } = window.supabase;
         state.supabase = createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY);
         setupAuthListener();
+        await handleAuthRedirect();
         await checkAuth();
       } catch (error) {
         displayAlert(ui.authAlert, 'Missing config.json - copy config.example.json and add Supabase keys.', 'error');
@@ -658,7 +1257,7 @@
       state.supabase.auth.onAuthStateChange((event, session) => {
         if (event === 'PASSWORD_RECOVERY') {
           state.passwordRecovery = true;
-          showResetModal();
+          showRecoveryPanel();
           return;
         }
 
@@ -666,9 +1265,10 @@
           applyAuthenticatedState(session);
         } else if (!state.passwordRecovery) {
           applyLoggedOutState();
-        }
-      });
-    }
+              }
+            });
+            setAuthMode('sign-in');
+          }
 
     async function checkAuth() {
       if (!state.supabase) return;
@@ -687,6 +1287,8 @@
       ui.passwordHelper.classList.toggle('active', mode === 'sign-up');
       renderChecklist(ui.passwordChecklist, ui.passwordInput.value);
       hideAlert(ui.authAlert);
+      state.pendingResendEmail = null;
+      ui.resendConfirmBtn.classList.add('hidden');
     }
 
     function renderChecklist(container, value = '') {
@@ -729,6 +1331,8 @@
           const { error } = await state.supabase.auth.signInWithPassword({ email, password });
           if (error) throw error;
           displayAlert(ui.authAlert, 'Signed in successfully.', 'success');
+          state.pendingResendEmail = null;
+          ui.resendConfirmBtn.classList.add('hidden');
         } else {
           const { error } = await state.supabase.auth.signUp({
             email,
@@ -740,9 +1344,27 @@
           if (error) throw error;
           displayAlert(ui.authAlert, 'Check your inbox to confirm your account before signing in.', 'success');
           setAuthMode('sign-in');
+          state.pendingResendEmail = email;
+          ui.resendConfirmBtn.classList.remove('hidden');
         }
       } catch (error) {
-        displayAlert(ui.authAlert, error.message || 'Authentication failed.', 'error');
+        const message = error?.message || error?.error_description || 'Authentication failed.';
+        const lower = message.toLowerCase();
+
+        if (state.authMode === 'sign-in' && (lower.includes('confirm') || lower.includes('verification'))) {
+          displayAlert(ui.authAlert, 'Please confirm your email before signing in.', 'info');
+          state.pendingResendEmail = email;
+          ui.resendConfirmBtn.classList.remove('hidden');
+        } else if (state.authMode === 'sign-up' && lower.includes('already') && lower.includes('registered')) {
+          displayAlert(ui.authAlert, 'Account already exists. If you still need to verify it, use the button below to resend the confirmation email.', 'info');
+          state.pendingResendEmail = email;
+          ui.resendConfirmBtn.classList.remove('hidden');
+          setAuthMode('sign-in');
+        } else {
+          displayAlert(ui.authAlert, message, 'error');
+          state.pendingResendEmail = null;
+          ui.resendConfirmBtn.classList.add('hidden');
+        }
       } finally {
         ui.authSubmitBtn.disabled = false;
         ui.authSubmitBtn.textContent = state.authMode === 'sign-in' ? 'Sign In' : 'Create Account';
@@ -776,6 +1398,8 @@
     }
 
     function applyAuthenticatedState(session) {
+      hideStatus();
+      hideStatusPanel();
       ui.authPanel.classList.add('hidden');
       ui.appPanel.classList.remove('hidden');
       ui.userActions.classList.remove('hidden');
@@ -784,6 +1408,7 @@
     }
 
     function applyLoggedOutState() {
+      hideStatusPanel();
       ui.authPanel.classList.remove('hidden');
       ui.appPanel.classList.add('hidden');
       ui.userActions.classList.add('hidden');
@@ -934,6 +1559,7 @@
     function hideResetModal() {
       ui.resetModalLayer.classList.add('hidden');
       state.passwordRecovery = false;
+      restoreAuthPanels();
     }
 
     async function handleResetPasswordSubmit() {

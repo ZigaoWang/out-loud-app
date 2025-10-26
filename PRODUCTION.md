@@ -60,7 +60,8 @@
 ### Web App
 1. **Deploy to Vercel/Netlify**
 2. **Update config.json** with production values
-3. **Add analytics** (optional)
+3. **Ensure `status.html` is deployed alongside `index.html`; set Supabase redirect URLs to `https://YOURDOMAIN/status.html`
+4. **Add analytics** (optional)
 
 ## Monitoring
 

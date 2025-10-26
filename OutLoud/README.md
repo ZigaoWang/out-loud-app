@@ -69,6 +69,13 @@ For on-network device testing use `ws://YOUR_COMPUTER_IP:3799`.
 
 > WebSocket connections now require a valid Supabase session token. Users must be signed in through the in-app authentication flow before starting a recording.
 
+### Email Verification & Status Page
+
+- Set `SUPABASE_EMAIL_REDIRECT_URL` in `Config.plist` (and the Supabase dashboard) to `https://web.out-loud.app/status.html`. The status page hosts the standalone email-confirmation and password-reset flows.
+- Sign-up prompts users to confirm their inbox. If a confirmation email is missed, the sign-in screen exposes a "Resend confirmation email" action that invokes Supabase’s resend API instead of requiring a new account.
+- Sign-up prompts users to confirm their inbox. If a confirmation email is missed, both the iOS sign-in screen and the web console expose a "Resend confirmation email" action powered by Supabase’s resend API—no need to recreate an account.
+- Confirmation, expiry, and recovery links all land on `status.html` so the main dashboard never renders for unauthenticated flows.
+
 ### Audio Format
 
 Configured in `AudioRecordingService.swift`:

@@ -6,6 +6,8 @@
     <string>https://your-project.supabase.co</string>
     <key>SUPABASE_ANON_KEY</key>
     <string>your-anon-key-here</string>
+    <key>SUPABASE_EMAIL_REDIRECT_URL</key>
+    <string>https://your-domain.com/status.html</string>
     <key>BACKEND_URL</key>
     <string>https://api.out-loud.app</string>
 </dict>

@@ -9,6 +9,7 @@ class SupabaseService: ObservableObject {
 
     private let client: SupabaseClient
     private let defaultBackendURL: String?
+    private let emailRedirectURL: URL?
 
     init() {
         // Load from Config.plist (gitignored)
@@ -25,6 +26,13 @@ class SupabaseService: ObservableObject {
             supabaseKey: supabaseKey
         )
         self.defaultBackendURL = config["BACKEND_URL"] as? String
+
+        if let redirectString = config["SUPABASE_EMAIL_REDIRECT_URL"] as? String,
+           let redirectURL = URL(string: redirectString), !redirectString.isEmpty {
+            self.emailRedirectURL = redirectURL
+        } else {
+            self.emailRedirectURL = nil
+        }
         checkAuth()
     }
 
@@ -38,18 +46,33 @@ class SupabaseService: ObservableObject {
                 }
             } catch {
                 await MainActor.run {
+                    self.currentUser = nil
                     self.isAuthenticated = false
                 }
             }
         }
     }
 
-    func signUp(email: String, password: String) async throws {
-        let response = try await client.auth.signUp(email: email, password: password)
+    @discardableResult
+    func signUp(email: String, password: String) async throws -> Bool {
+        let response = try await client.auth.signUp(
+            email: email,
+            password: password,
+            redirectTo: emailRedirectURL
+        )
+
         await MainActor.run {
-            self.currentUser = response.user
-            self.isAuthenticated = true
+            if response.session != nil {
+                self.currentUser = response.user
+                self.isAuthenticated = true
+            } else {
+                self.currentUser = nil
+                self.isAuthenticated = false
+            }
         }
+
+        // When email confirmation is required, Supabase returns nil session.
+        return response.session == nil
     }
 
     func signIn(email: String, password: String) async throws {
@@ -58,6 +81,19 @@ class SupabaseService: ObservableObject {
             self.currentUser = response.user
             self.isAuthenticated = true
         }
+    }
+
+    func sendPasswordReset(email: String, redirectTo: URL? = nil) async throws {
+        let targetURL = redirectTo ?? emailRedirectURL
+        _ = try await client.auth.resetPasswordForEmail(email, redirectTo: targetURL)
+    }
+
+    func updatePassword(_ newPassword: String) async throws {
+        _ = try await client.auth.update(user: UserAttributes(password: newPassword))
+    }
+
+    func resendConfirmationEmail(email: String) async throws {
+        _ = try await client.auth.resend(email: email, type: .signup)
     }
 
     func signOut() async throws {
