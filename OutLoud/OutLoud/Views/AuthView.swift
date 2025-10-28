@@ -179,11 +179,14 @@ struct AuthView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 18)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(primaryColor)
+                        )
+                        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     }
                     .buttonStyle(.plain)
-                    .background(primaryColor)
                     .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     .shadow(color: primaryColor.opacity(0.28), radius: 18, x: 0, y: 12)
                     .disabled(isLoading)
                 }
@@ -346,16 +349,17 @@ private struct CTAButton: View {
                 .font(.system(size: 17, weight: .semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 18)
+                .background(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(isPrimary ? color : Color(.systemBackground))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                .stroke(isPrimary ? Color.clear : Color(.systemGray3), lineWidth: 1)
+                        )
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
         .buttonStyle(.plain)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(isPrimary ? color : Color(.systemBackground))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(isPrimary ? Color.clear : Color(.systemGray3), lineWidth: 1)
-                )
-        )
         .foregroundStyle(isPrimary ? .white : Color(.label))
         .shadow(color: isPrimary ? color.opacity(0.24) : Color.black.opacity(0.05), radius: 18, x: 0, y: 10)
     }
