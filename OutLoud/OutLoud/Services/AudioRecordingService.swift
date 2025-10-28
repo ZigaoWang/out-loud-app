@@ -65,7 +65,7 @@ class AudioRecordingService: NSObject {
 
         // Create temporary audio file
         let tempDir = FileManager.default.temporaryDirectory
-        audioFileURL = tempDir.appendingPathComponent(UUID().uuidString).appendingPathExtension("caf")
+        audioFileURL = tempDir.appendingPathComponent(UUID().uuidString).appendingPathExtension("m4a")
 
         guard let audioFileURL = audioFileURL else {
             throw RecordingError.invalidFileURL
@@ -105,9 +105,16 @@ class AudioRecordingService: NSObject {
 
         self.audioFormat = targetFormat
 
-        // Create audio file for recording
+        // Create audio file for recording with AAC settings
+        let settings: [String: Any] = [
+            AVFormatIDKey: kAudioFormatMPEG4AAC,
+            AVSampleRateKey: 16000,
+            AVNumberOfChannelsKey: 1,
+            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+        ]
+
         do {
-            audioFile = try AVAudioFile(forWriting: audioFileURL, settings: targetFormat.settings)
+            audioFile = try AVAudioFile(forWriting: audioFileURL, settings: settings)
             print("📝 Created audio file: \(audioFileURL.lastPathComponent)")
         } catch {
             print("❌ Failed to create audio file: \(error.localizedDescription)")

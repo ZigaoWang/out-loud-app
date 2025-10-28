@@ -56,13 +56,6 @@ struct SessionDetailView: View {
         .navigationTitle(currentSession.displayTitle)
         .toolbar {
             Menu {
-                Button {
-                    editedTitle = currentSession.title ?? ""
-                    isEditingTitle = true
-                } label: {
-                    Label("Edit Title", systemImage: "pencil")
-                }
-
                 Button(role: .destructive) {
                     showDeleteConfirmation = true
                 } label: {
@@ -70,13 +63,6 @@ struct SessionDetailView: View {
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
-            }
-        }
-        .alert("Edit Title", isPresented: $isEditingTitle) {
-            TextField("Title", text: $editedTitle)
-            Button("Cancel", role: .cancel) { }
-            Button("Save") {
-                sessionManager.updateSessionTitle(currentSession, newTitle: editedTitle)
             }
         }
         .alert("Delete Session", isPresented: $showDeleteConfirmation) {
@@ -356,130 +342,58 @@ struct SessionDetailView: View {
     }
 
     private func setupAudioPlayer() {
-        guard let audioURL = sessionManager.getAudioURL(for: currentSession) else {
-            print("❌ No audio URL for session")
+        guard let audioPath = currentSession.audioFileName,
+              let audioURL = SupabaseService.shared.getAudioURL(path: audioPath) else {
+            print("⚠️ No audio file available")
             return
         }
 
-        print("📂 Audio file path: \(audioURL.path)")
+        Task {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: audioURL)
+                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
+                try data.write(to: tempURL)
 
-        guard FileManager.default.fileExists(atPath: audioURL.path) else {
-            print("❌ Audio file doesn't exist at: \(audioURL.path)")
-            return
-        }
+                await MainActor.run {
+                    do {
+                        let player = try AVAudioPlayer(contentsOf: tempURL)
+                        player.prepareToPlay()
+                        self.audioPlayer = player
 
-        // Check file size
-        if let attrs = try? FileManager.default.attributesOfItem(atPath: audioURL.path),
-           let fileSize = attrs[.size] as? Int64 {
-            print("📦 Audio file size: \(fileSize) bytes")
-
-            // Validate file size
-            guard fileSize > 1000 else {
-                print("❌ Audio file too small, likely corrupted")
-                return
+                        let wrapper = AudioPlayerDelegateWrapper {
+                            Task { @MainActor in
+                                self.handlePlaybackFinished()
+                            }
+                        }
+                        self.audioPlayerDelegate = wrapper
+                        player.delegate = wrapper
+                        print("✅ Audio player ready")
+                    } catch {
+                        print("❌ Failed to create audio player: \(error)")
+                    }
+                }
+            } catch {
+                print("❌ Failed to download audio: \(error)")
             }
-        }
-
-        // Debug: Print first few word timestamps
-        if let segments = currentSession.transcriptSegments, let firstSegment = segments.first {
-            print("🎯 Word timestamps (first 5):")
-            for (index, word) in firstSegment.words.prefix(5).enumerated() {
-                print("   \(index + 1). \"\(word.word)\" [\(String(format: "%.2f", word.startTime))s - \(String(format: "%.2f", word.endTime))s]")
-            }
-        }
-
-        do {
-            // Configure audio session
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .default, options: [])
-            try audioSession.setActive(true)
-
-            // Create and configure player
-            audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
-            audioPlayer?.prepareToPlay()
-            audioPlayer?.volume = 1.0
-
-            // Create and store delegate
-            audioPlayerDelegate = AudioPlayerDelegateWrapper(onFinish: { [self] in
-                self.handlePlaybackFinished()
-            })
-            audioPlayer?.delegate = audioPlayerDelegate
-
-            print("✅ Audio player ready - Duration: \(String(format: "%.2f", audioPlayer?.duration ?? 0))s")
-        } catch {
-            print("❌ Failed to setup audio player: \(error.localizedDescription)")
-            print("❌ Error details: \(error)")
         }
     }
 
     private func togglePlayback() {
-        guard let player = audioPlayer else {
-            print("❌ No audio player available, attempting to setup...")
-            setupAudioPlayer()
-            return
-        }
+        guard let player = audioPlayer else { return }
 
         if isPlaying {
             player.pause()
             stopTimer()
-            isPlaying = false
-            print("⏸️ Paused at \(String(format: "%.2f", currentTime))s")
         } else {
-            // If at the end, restart from beginning
-            if currentTime >= player.duration - 0.1 {
-                player.currentTime = 0
-                currentTime = 0
-                print("🔄 Restarting from beginning")
-            }
-
-            let success = player.play()
-            if success {
-                startTimer()
-                isPlaying = true
-                print("▶️ Playing from \(String(format: "%.2f", currentTime))s")
-                print("   Volume: \(player.volume), Duration: \(String(format: "%.2f", player.duration))s")
-                print("   isPlaying: \(player.isPlaying)")
-            } else {
-                print("❌ Failed to start playback")
-            }
+            player.play()
+            startTimer()
         }
+        isPlaying.toggle()
     }
 
     private func startTimer() {
-        stopTimer() // Clean up any existing timer
-
-        timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [self] _ in
-            guard let player = self.audioPlayer else { return }
-
-            // Update current time
-            let newTime = player.currentTime
-            DispatchQueue.main.async {
-                self.currentTime = newTime
-            }
-
-            // Debug: Print current word being highlighted (every 0.5s)
-            if Int(newTime * 10) % 5 == 0 {
-                if let segments = currentSession.transcriptSegments, let firstSegment = segments.first {
-                    let currentWord = firstSegment.words.first(where: { word in
-                        newTime >= word.startTime && newTime < word.endTime
-                    })
-                    if let word = currentWord {
-                        print("⏱️ \(String(format: "%.2f", newTime))s: \"\(word.word)\" [\(String(format: "%.2f", word.startTime))s-\(String(format: "%.2f", word.endTime))s]")
-                    }
-                }
-            }
-
-            // Check if playback finished
-            if !player.isPlaying && player.currentTime > 0 {
-                DispatchQueue.main.async {
-                    self.handlePlaybackFinished()
-                }
-            }
-        }
-
-        // Ensure timer runs during UI interactions
-        if let timer = timer {
-            RunLoop.main.add(timer, forMode: .common)
+        timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+            currentTime = audioPlayer?.currentTime ?? 0
         }
     }
 
@@ -489,10 +403,10 @@ struct SessionDetailView: View {
     }
 
     private func handlePlaybackFinished() {
-        print("🏁 Playback finished")
-        stopTimer()
         isPlaying = false
-        // Keep currentTime at the end so user can see full transcript is highlighted
+        stopTimer()
+        currentTime = 0
+        audioPlayer?.currentTime = 0
     }
 
     private func seekTo(_ percentage: Double) {
@@ -500,7 +414,6 @@ struct SessionDetailView: View {
         let newTime = player.duration * percentage
         player.currentTime = newTime
         currentTime = newTime
-        print("⏩ Seeked to \(String(format: "%.2f", newTime))s")
     }
 
     private func skip(_ seconds: Double) {
@@ -508,17 +421,11 @@ struct SessionDetailView: View {
         let newTime = max(0, min(player.duration, player.currentTime + seconds))
         player.currentTime = newTime
         currentTime = newTime
-        print("⏭️ Skipped to \(String(format: "%.2f", newTime))s")
     }
 
     private func cleanup() {
         audioPlayer?.stop()
-        audioPlayer?.delegate = nil
-        audioPlayerDelegate = nil
         stopTimer()
-        isPlaying = false
-        currentTime = 0
-        print("🧹 Cleaned up audio player")
     }
 
     private func formatTime(_ time: TimeInterval) -> String {

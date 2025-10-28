@@ -1,61 +1,35 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Environment variables
+.env
+backend/.env
 
-# dependencies
-node_modules/
-
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
+# API Keys
 *.key
-*.mobileprovision
+*.pem
 
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
+# Config files with secrets
+web/config.json
+OutLoud/Config.plist
 
 # macOS
 .DS_Store
-*.pem
 
-# local env files
-.env
-.env*.local
+# Xcode
+*.xcuserstate
+*.xcworkspace
+xcuserdata/
+DerivedData/
 
-# typescript
-*.tsbuildinfo
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
 
-# generated native folders
-/ios
-/android
-
-# Backend
-backend/node_modules/
-backend/dist/
-backend/.env
-
-# iOS
-OutLoud/Pods/
-OutLoud/*.xcworkspace
-OutLoud/*.xcuserdata
-OutLoud/DerivedData/
-OutLoud/build/
+# Build
+dist/
+build/
+*.app
 *.ipa
-*.dSYM.zip
-*.dSYM
 
-# Swift Package Manager
-.build/
-.swiftpm/
+# Logs
+*.log
+OutLoud/OutLoud/Config.plist

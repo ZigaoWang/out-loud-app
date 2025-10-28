@@ -7,6 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A295B6082EAC8BC900A484D8 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = A295B6072EAC8BC900A484D8 /* Auth */; };
+		A295B60A2EAC8BC900A484D8 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = A295B6092EAC8BC900A484D8 /* Functions */; };
+		A295B60C2EAC8BC900A484D8 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = A295B60B2EAC8BC900A484D8 /* PostgREST */; };
+		A295B60E2EAC8BC900A484D8 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = A295B60D2EAC8BC900A484D8 /* Realtime */; };
+		A295B6102EAC8BC900A484D8 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = A295B60F2EAC8BC900A484D8 /* Storage */; };
+		A295B6122EAC8BC900A484D8 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = A295B6112EAC8BC900A484D8 /* Supabase */; };
+		A295B6142EAC8BFD00A484D8 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A295B6132EAC8BFD00A484D8 /* SupabaseService.swift */; };
+		A295B6172EAC8C0D00A484D8 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A295B6162EAC8C0D00A484D8 /* DesignSystem.swift */; };
+		A295B6182EAC8C0D00A484D8 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A295B6152EAC8C0D00A484D8 /* AuthView.swift */; };
+		A295B61A2EACB18000A484D8 /* Config.plist in Resources */ = {isa = PBXBuildFile; fileRef = A295B6192EACB18000A484D8 /* Config.plist */; };
 		AA0000010000000000000001 /* OutLoudApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000001 /* OutLoudApp.swift */; };
 		AA0000030000000000000001 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000040000000000000001 /* Models.swift */; };
 		AA0000050000000000000001 /* AudioRecordingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000060000000000000001 /* AudioRecordingService.swift */; };
@@ -22,6 +32,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A295B6132EAC8BFD00A484D8 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
+		A295B6152EAC8C0D00A484D8 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
+		A295B6162EAC8C0D00A484D8 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		A295B6192EACB18000A484D8 /* Config.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Config.plist; sourceTree = "<group>"; };
 		AA0000010000000000000002 /* OutLoud.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OutLoud.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000020000000000000001 /* OutLoudApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutLoudApp.swift; sourceTree = "<group>"; };
 		AA0000040000000000000001 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -42,6 +56,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A295B6122EAC8BC900A484D8 /* Supabase in Frameworks */,
+				A295B6102EAC8BC900A484D8 /* Storage in Frameworks */,
+				A295B60C2EAC8BC900A484D8 /* PostgREST in Frameworks */,
+				A295B60A2EAC8BC900A484D8 /* Functions in Frameworks */,
+				A295B6082EAC8BC900A484D8 /* Auth in Frameworks */,
+				A295B60E2EAC8BC900A484D8 /* Realtime in Frameworks */,
 				AA00000F0000000000000001 /* Starscream in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -52,6 +72,7 @@
 		AA0000130000000000000001 = {
 			isa = PBXGroup;
 			children = (
+				A295B6192EACB18000A484D8 /* Config.plist */,
 				AA0000140000000000000001 /* OutLoud */,
 				AA0000150000000000000001 /* Products */,
 			);
@@ -89,6 +110,7 @@
 		AA0000170000000000000001 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A295B6132EAC8BFD00A484D8 /* SupabaseService.swift */,
 				AA0000060000000000000001 /* AudioRecordingService.swift */,
 				AA0000080000000000000001 /* WebSocketService.swift */,
 				AA0000140000000000000002 /* SessionManager.swift */,
@@ -107,6 +129,8 @@
 		AA0000190000000000000001 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				A295B6152EAC8C0D00A484D8 /* AuthView.swift */,
+				A295B6162EAC8C0D00A484D8 /* DesignSystem.swift */,
 				AA00000E0000000000000001 /* SessionView.swift */,
 				AA0000120000000000000002 /* AudioWaveformView.swift */,
 				AA0000150000000000000002 /* SessionDetailView.swift */,
@@ -134,6 +158,12 @@
 			name = OutLoud;
 			packageProductDependencies = (
 				AA0000100000000000000001 /* Starscream */,
+				A295B6072EAC8BC900A484D8 /* Auth */,
+				A295B6092EAC8BC900A484D8 /* Functions */,
+				A295B60B2EAC8BC900A484D8 /* PostgREST */,
+				A295B60D2EAC8BC900A484D8 /* Realtime */,
+				A295B60F2EAC8BC900A484D8 /* Storage */,
+				A295B6112EAC8BC900A484D8 /* Supabase */,
 			);
 			productName = OutLoud;
 			productReference = AA0000010000000000000002 /* OutLoud.app */;
@@ -165,6 +195,7 @@
 			mainGroup = AA0000130000000000000001;
 			packageReferences = (
 				AA0000200000000000000001 /* XCRemoteSwiftPackageReference "Starscream" */,
+				A295B6062EAC8BC900A484D8 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 			);
 			productRefGroup = AA0000150000000000000001 /* Products */;
 			projectDirPath = "";
@@ -180,6 +211,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A295B61A2EACB18000A484D8 /* Config.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -191,7 +223,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA0000010000000000000001 /* OutLoudApp.swift in Sources */,
+				A295B6142EAC8BFD00A484D8 /* SupabaseService.swift in Sources */,
 				AA0000030000000000000001 /* Models.swift in Sources */,
+				A295B6172EAC8C0D00A484D8 /* DesignSystem.swift in Sources */,
+				A295B6182EAC8C0D00A484D8 /* AuthView.swift in Sources */,
 				AA0000050000000000000001 /* AudioRecordingService.swift in Sources */,
 				AA0000070000000000000001 /* WebSocketService.swift in Sources */,
 				AA0000090000000000000001 /* SessionViewModel.swift in Sources */,
@@ -410,6 +445,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		A295B6062EAC8BC900A484D8 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
 		AA0000200000000000000001 /* XCRemoteSwiftPackageReference "Starscream" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/daltoniam/Starscream.git";
@@ -421,6 +464,36 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		A295B6072EAC8BC900A484D8 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A295B6062EAC8BC900A484D8 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		A295B6092EAC8BC900A484D8 /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A295B6062EAC8BC900A484D8 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		A295B60B2EAC8BC900A484D8 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A295B6062EAC8BC900A484D8 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		A295B60D2EAC8BC900A484D8 /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A295B6062EAC8BC900A484D8 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		A295B60F2EAC8BC900A484D8 /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A295B6062EAC8BC900A484D8 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		A295B6112EAC8BC900A484D8 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A295B6062EAC8BC900A484D8 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
 		AA0000100000000000000001 /* Starscream */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AA0000200000000000000001 /* XCRemoteSwiftPackageReference "Starscream" */;

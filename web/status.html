@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Out Loud – Account Status</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg-body: #f5f6fa;
+      --card-bg: #ffffff;
+      --text-primary: #0f172a;
+      --text-secondary: #556173;
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.12);
+      --border: rgba(15, 23, 42, 0.08);
+      --radius-lg: 24px;
+      --radius-sm: 12px;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg-body);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    .card {
+      width: min(480px, 100%);
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 30px 60px rgba(15, 23, 42, 0.18);
+      border: 1px solid var(--border);
+      padding: 36px 40px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 28px;
+      color: var(--text-primary);
+    }
+
+    p {
+      margin: 0 0 24px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    button, a.button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 15px 30px rgba(37, 99, 235, 0.2);
+    }
+
+    .secondary {
+      background: rgba(15, 23, 42, 0.05);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .danger {
+      background: rgba(220, 38, 38, 0.12);
+      color: #b91c1c;
+      border: 1px solid rgba(220, 38, 38, 0.2);
+    }
+
+    .hidden { display: none !important; }
+
+    .inline-form {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    .inline-form label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .inline-form input {
+      padding: 12px 14px;
+      font-size: 15px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .inline-form input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .alert {
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      border: 1px solid transparent;
+    }
+
+    .alert.error {
+      background: rgba(220, 38, 38, 0.12);
+      border-color: rgba(220, 38, 38, 0.2);
+      color: #b91c1c;
+    }
+
+    .alert.success {
+      background: rgba(22, 163, 74, 0.12);
+      border-color: rgba(22, 163, 74, 0.2);
+      color: #15803d;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="statusCard">
+    <h1 id="statusTitle">Checking link…</h1>
+    <p id="statusMessage">Hold on while we verify your request.</p>
+    <div id="statusActions" class="actions hidden"></div>
+    <div id="resetPanel" class="hidden">
+      <form id="resetForm" class="inline-form">
+        <div id="resetAlert" class="alert hidden"></div>
+        <div>
+          <label for="newPassword">New password</label>
+          <input id="newPassword" type="password" autocomplete="new-password" placeholder="Enter new password" />
+        </div>
+        <div>
+          <label for="confirmPassword">Confirm password</label>
+          <input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Confirm new password" />
+        </div>
+        <div class="actions">
+          <button type="submit" class="primary" id="resetSubmit">Update Password</button>
+          <button type="button" class="secondary" id="resetCancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const ui = {
+      title: document.getElementById('statusTitle'),
+      message: document.getElementById('statusMessage'),
+      actions: document.getElementById('statusActions'),
+      resetPanel: document.getElementById('resetPanel'),
+      resetForm: document.getElementById('resetForm'),
+      resetAlert: document.getElementById('resetAlert'),
+      resetSubmit: document.getElementById('resetSubmit'),
+      resetCancel: document.getElementById('resetCancel'),
+    };
+
+const passwordRules = [
+  { label: 'At least 8 characters', test: value => value.length >= 8 },
+  { label: 'Lowercase letter', test: value => /[a-z]/.test(value) },
+  { label: 'Uppercase letter', test: value => /[A-Z]/.test(value) },
+  { label: 'Number', test: value => /\d/.test(value) },
+  { label: 'Symbol (e.g. !@#$)', test: value => /[^A-Za-z0-9]/.test(value) }
+];
+
+    let supabase;
+
+    init();
+
+    async function init() {
+      try {
+        const config = await fetchConfig();
+        supabase = window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY);
+        await handleRedirect();
+      } catch (error) {
+        showError('Unable to load configuration. Please try again later.');
+      }
+    }
+
+    async function fetchConfig() {
+      const response = await fetch('config.json');
+      if (!response.ok) throw new Error('Missing config.json');
+      return response.json();
+    }
+
+    function setStatus({ title, message, actions = [] }) {
+      ui.title.textContent = title;
+      ui.message.textContent = message;
+
+      if (actions.length === 0) {
+        ui.actions.classList.add('hidden');
+        ui.actions.innerHTML = '';
+      } else {
+        ui.actions.classList.remove('hidden');
+        ui.actions.innerHTML = actions.map(action => `
+          <button class="${action.variant || 'primary'}" data-action="${action.id}">${action.label}</button>
+        `).join('');
+
+        ui.actions.querySelectorAll('button[data-action]').forEach(button => {
+          const id = button.getAttribute('data-action');
+          const action = actions.find(item => item.id === id);
+          if (action?.onClick) {
+            button.addEventListener('click', action.onClick, { once: true });
+          }
+        });
+      }
+    }
+
+    function showError(message) {
+      setStatus({
+        title: 'Something went wrong',
+        message,
+        actions: [
+          {
+            id: 'signin',
+            label: 'Back to sign in',
+            variant: 'secondary',
+            onClick: () => window.location.href = '/',
+          }
+        ],
+      });
+      hideResetForm();
+    }
+
+    function showResetForm() {
+      ui.resetPanel.classList.remove('hidden');
+      ui.actions.classList.add('hidden');
+      ui.resetAlert.classList.add('hidden');
+      ui.resetAlert.textContent = '';
+      ui.resetForm.reset();
+      ui.resetForm.removeEventListener('submit', submitReset);
+      ui.resetCancel.removeEventListener('click', cancelReset);
+      ui.resetForm.addEventListener('submit', submitReset, { once: true });
+      ui.resetCancel.addEventListener('click', cancelReset, { once: true });
+      requestAnimationFrame(() => {
+        ui.resetForm.querySelector('#newPassword').focus();
+      });
+    }
+
+    function hideResetForm() {
+      ui.resetPanel.classList.add('hidden');
+    }
+
+    function cancelReset() {
+      hideResetForm();
+      setStatus({
+        title: 'Password reset cancelled',
+        message: 'You can request a new reset link from the Out Loud app or web dashboard.',
+        actions: [
+          {
+            id: 'signin',
+            label: 'Back to sign in',
+            onClick: () => window.location.href = '/',
+          }
+        ],
+      });
+    }
+
+    async function submitReset(event) {
+      event.preventDefault();
+
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (!passwordRules.every(rule => rule.test(newPassword))) {
+        showResetAlert('Password must meet all security requirements.');
+        resetListeners();
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        showResetAlert('Passwords do not match.');
+        resetListeners();
+        return;
+      }
+
+      ui.resetSubmit.disabled = true;
+      ui.resetSubmit.textContent = 'Updating…';
+
+      try {
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) throw error;
+
+        setStatus({
+          title: 'Password Updated',
+          message: 'You can now sign in with your new password.',
+          actions: [
+            {
+              id: 'signin',
+              label: 'Sign In on Web',
+              onClick: () => window.location.href = '/',
+            }
+          ],
+        });
+        hideResetForm();
+      } catch (error) {
+        showResetAlert(error.message || 'Unable to update password.');
+        resetListeners();
+      } finally {
+        ui.resetSubmit.disabled = false;
+        ui.resetSubmit.textContent = 'Update Password';
+      }
+    }
+
+    function resetListeners() {
+      ui.resetForm.removeEventListener('submit', submitReset);
+      ui.resetCancel.removeEventListener('click', cancelReset);
+      ui.resetForm.addEventListener('submit', submitReset, { once: true });
+      ui.resetCancel.addEventListener('click', cancelReset, { once: true });
+    }
+
+    function showResetAlert(message, type = 'error') {
+      ui.resetAlert.textContent = message;
+      ui.resetAlert.className = `alert ${type}`;
+      ui.resetAlert.classList.remove('hidden');
+    }
+
+    async function handleRedirect() {
+      const search = new URLSearchParams(window.location.search);
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const params = hash.get('type') ? hash : search.get('type') ? search : null;
+      const type = params?.get('type');
+      const code = search.get('code');
+
+      if (!params && !code) {
+        setStatus({
+          title: 'No action required',
+          message: 'This page is intended for Out Loud email confirmations and password resets.',
+          actions: [
+            {
+              id: 'home',
+              label: 'Back to main site',
+              onClick: () => window.location.href = '/',
+            }
+          ],
+        });
+        return;
+      }
+
+      if (code && !type) {
+        setStatus({
+          title: 'Email confirmed ✉️',
+          message: 'You can now sign in to Out Loud with your account.',
+          actions: [
+            {
+              id: 'signin',
+              label: 'Sign In on Web',
+              onClick: () => window.location.href = '/',
+            },
+            {
+              id: 'close',
+              label: 'Close window',
+              variant: 'secondary',
+              onClick: () => window.close(),
+            }
+          ],
+        });
+        clearParams();
+        return;
+      }
+
+      if (params) {
+        const errorDescription = params.get('error_description');
+        const errorCode = params.get('error_code');
+
+        if (errorDescription || errorCode) {
+          const message = errorCode === 'otp_expired'
+            ? 'This link has expired. Request a new link from the Out Loud app.'
+            : (errorDescription || 'We could not validate the link.');
+
+          setStatus({
+            title: errorCode === 'otp_expired' ? 'Link expired' : 'Link error',
+            message,
+            actions: [
+              {
+                id: 'signin',
+                label: 'Back to sign in',
+                onClick: () => window.location.href = '/',
+              },
+              {
+                id: 'reset',
+                label: 'Reset password',
+                onClick: () => handleRecovery(params),
+              }
+            ],
+          });
+          clearParams();
+          return;
+        }
+
+        if (type === 'recovery') {
+          await handleRecovery(params);
+          clearParams();
+          return;
+        }
+
+        if (type === 'signup') {
+          setStatus({
+            title: 'Email confirmed ✉️',
+            message: 'You can now sign in to Out Loud.',
+            actions: [
+              {
+                id: 'signin',
+                label: 'Sign In on Web',
+                onClick: () => window.location.href = '/',
+              },
+              {
+                id: 'close',
+                label: 'Close window',
+                variant: 'secondary',
+                onClick: () => window.close(),
+              }
+            ],
+          });
+          clearParams();
+          return;
+        }
+      }
+
+      setStatus({
+        title: 'Unrecognized request',
+        message: 'This link is not recognized. You can restart the flow from the Out Loud app.',
+        actions: [
+          {
+            id: 'signin',
+            label: 'Back to sign in',
+            onClick: () => window.location.href = '/',
+          }
+        ],
+      });
+    }
+
+    async function handleRecovery(params) {
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+
+      if (!accessToken || !refreshToken) {
+        setStatus({
+          title: 'Open this link on the original device',
+          message: 'We couldn\'t verify your reset token. Open the reset email on the device where you requested it, or request a new link from the Out Loud app.',
+          actions: [
+            {
+              id: 'request',
+              label: 'Request new reset link',
+              onClick: () => window.location.href = '/',
+            }
+          ],
+        });
+        return;
+      }
+
+      try {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (error) throw error;
+      } catch (error) {
+        showError(error.message || 'Unable to activate password reset.');
+        return;
+      }
+
+      setStatus({
+        title: 'Reset your password',
+        message: 'Set a new password to continue using Out Loud.',
+      });
+      showResetForm();
+    }
+
+    function clearParams() {
+      const url = new URL(window.location.href);
+      url.search = '';
+      url.hash = '';
+      window.history.replaceState({}, document.title, url.toString());
+    }
+  </script>
+</body>
+</html>
