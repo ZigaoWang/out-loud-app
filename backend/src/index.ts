@@ -27,7 +27,11 @@ const allowedOrigins = config.security.allowedOrigins
 
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+    if (allowedOrigins.length === 0) {
+      callback(new Error('CORS not configured'));
+      return;
+    }
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -46,7 +50,7 @@ const apiRateLimiter = rateLimit({
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(apiRateLimiter);
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -61,7 +65,13 @@ app.use('/upload', uploadRoutes);
 // WebSocket connection handler
 wss.on('connection', async (ws: WebSocket, req) => {
   const url = new URL(req.url!, `http://${req.headers.host}`);
-  const sessionId = url.searchParams.get('sessionId') || `session_${Date.now()}`;
+  const sessionId = url.searchParams.get('sessionId');
+
+  if (!sessionId || sessionId.length > 255) {
+    ws.send(JSON.stringify({ type: 'error', message: 'Invalid session ID' }));
+    ws.close(1008, 'Invalid session ID');
+    return;
+  }
 
   const authHeader = req.headers['authorization'];
   const rawToken = Array.isArray(authHeader) ? authHeader[0] : authHeader;

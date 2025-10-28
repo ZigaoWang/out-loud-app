@@ -29,7 +29,8 @@ router.post('/audio', upload.single('audio'), async (req, res) => {
     }
 
     // Validate file type
-    if (!req.file.mimetype.startsWith('audio/')) {
+    const allowedMimeTypes = ['audio/mp4', 'audio/m4a', 'audio/mpeg', 'audio/wav', 'audio/x-m4a'];
+    if (!allowedMimeTypes.includes(req.file.mimetype)) {
       return res.status(400).json({ error: 'Invalid file type' });
     }
 
