@@ -82,11 +82,12 @@
     .panel-grid {
       display: grid;
       grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
-      gap: 32px;
+      gap: 24px;
       max-width: 1100px;
       width: 100%;
       margin: 0 auto;
       flex: 1;
+      align-items: start;
     }
 
     .card {
@@ -376,6 +377,7 @@
       color: var(--accent);
       font-weight: 500;
       padding: 0;
+      margin-top: 16px;
     }
 
     .password-helper {
@@ -466,9 +468,13 @@
     }
 
     .session-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-      border-color: rgba(0, 0, 0, 0.1);
+      background: #fafafa;
+      border-color: rgba(0, 0, 0, 0.12);
+    }
+
+    .session-card.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
     }
 
     .session-title {
@@ -708,6 +714,10 @@
 
         <div class="session-grid" id="sessionsList"></div>
       </section>
+
+      <section class="card hidden" id="detailPanel">
+        <div id="sessionDetail"></div>
+      </section>
     </div>
   </div>
 
@@ -736,13 +746,19 @@
     </div>
   </div>
 
-  <div class="modal-layer hidden" id="sessionModalLayer">
-    <div class="modal detail-modal" id="sessionModal">
-      <div class="modal-actions" style="justify-content: flex-end;">
-        <button class="btn" type="button" id="closeSessionModal">Close</button>
+  <div class="modal-layer hidden" id="forgotPasswordModal">
+    <div class="modal">
+      <h3>Reset password</h3>
+      <p class="subtitle">Enter your email to receive a reset link</p>
+      <div class="input-group">
+        <label for="resetEmail">Email</label>
+        <input id="resetEmail" type="email" placeholder="you@example.com" />
       </div>
-      <div id="sessionDetail"></div>
-      <button class="btn danger" type="button" id="deleteSessionBtn">Delete session</button>
+      <div class="alert hidden" id="forgotAlert"></div>
+      <div class="modal-actions">
+        <button class="btn" type="button" id="cancelForgotBtn">Cancel</button>
+        <button class="btn primary" type="button" id="submitForgotBtn">Send reset link</button>
+      </div>
     </div>
   </div>
 
@@ -779,6 +795,7 @@
       ui.statusPanel = document.getElementById('statusPanel');
       ui.authPanel = document.getElementById('authPanel');
       ui.appPanel = document.getElementById('appPanel');
+      ui.detailPanel = document.getElementById('detailPanel');
       ui.authTabs = Array.from(document.querySelectorAll('.auth-tab'));
       ui.authForm = document.getElementById('authForm');
       ui.emailInput = document.getElementById('email');
@@ -801,10 +818,12 @@
       ui.newPasswordInput = document.getElementById('newPassword');
       ui.confirmPasswordInput = document.getElementById('confirmPassword');
       ui.resetChecklist = document.getElementById('resetChecklist');
-      ui.sessionModalLayer = document.getElementById('sessionModalLayer');
       ui.sessionDetail = document.getElementById('sessionDetail');
-      ui.closeSessionModal = document.getElementById('closeSessionModal');
-      ui.deleteSessionBtn = document.getElementById('deleteSessionBtn');
+      ui.forgotPasswordModal = document.getElementById('forgotPasswordModal');
+      ui.resetEmailInput = document.getElementById('resetEmail');
+      ui.forgotAlert = document.getElementById('forgotAlert');
+      ui.cancelForgotBtn = document.getElementById('cancelForgotBtn');
+      ui.submitForgotBtn = document.getElementById('submitForgotBtn');
     }
 
     function bindUI() {
@@ -817,22 +836,23 @@
         renderChecklist(ui.passwordChecklist, ui.passwordInput.value);
       });
 
-      ui.forgotPasswordBtn.addEventListener('click', handleForgotPassword);
+      ui.forgotPasswordBtn.addEventListener('click', showForgotPasswordModal);
       ui.resendConfirmBtn.addEventListener('click', handleResendConfirmation);
       ui.signOutBtn.addEventListener('click', handleSignOut);
       ui.searchInput.addEventListener('input', filterSessions);
       ui.cancelResetBtn.addEventListener('click', hideResetModal);
       ui.submitResetBtn.addEventListener('click', handleResetPasswordSubmit);
       ui.newPasswordInput.addEventListener('input', () => renderChecklist(ui.resetChecklist, ui.newPasswordInput.value));
-      ui.closeSessionModal.addEventListener('click', closeSessionModal);
-      ui.sessionModalLayer.addEventListener('click', event => {
-        if (event.target === ui.sessionModalLayer) {
-          closeSessionModal();
-        }
-      });
+      ui.cancelForgotBtn.addEventListener('click', hideForgotPasswordModal);
+      ui.submitForgotBtn.addEventListener('click', handleForgotPasswordSubmit);
       ui.resetModalLayer.addEventListener('click', event => {
         if (event.target === ui.resetModalLayer) {
           hideResetModal();
+        }
+      });
+      ui.forgotPasswordModal.addEventListener('click', event => {
+        if (event.target === ui.forgotPasswordModal) {
+          hideForgotPasswordModal();
         }
       });
     }
@@ -1290,6 +1310,7 @@
       ui.authTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.mode === mode));
       ui.authSubmitBtn.textContent = mode === 'sign-in' ? 'Sign In' : 'Create Account';
       ui.passwordHelper.classList.toggle('active', mode === 'sign-up');
+      ui.forgotPasswordBtn.classList.toggle('hidden', mode === 'sign-up');
       renderChecklist(ui.passwordChecklist, ui.passwordInput.value);
       hideAlert(ui.authAlert);
       state.pendingResendEmail = null;
@@ -1376,22 +1397,40 @@
       }
     }
 
-    async function handleForgotPassword() {
-      hideAlert(ui.authAlert);
-      const email = ui.emailInput.value.trim().toLowerCase();
+    function showForgotPasswordModal() {
+      ui.resetEmailInput.value = ui.emailInput.value;
+      ui.forgotPasswordModal.classList.remove('hidden');
+      hideAlert(ui.forgotAlert);
+      ui.resetEmailInput.focus();
+    }
+
+    function hideForgotPasswordModal() {
+      ui.forgotPasswordModal.classList.add('hidden');
+    }
+
+    async function handleForgotPasswordSubmit() {
+      hideAlert(ui.forgotAlert);
+      const email = ui.resetEmailInput.value.trim().toLowerCase();
       if (!email) {
-        displayAlert(ui.authAlert, 'Enter the email address first so we know where to send the reset link.', 'error');
+        displayAlert(ui.forgotAlert, 'Please enter your email address.', 'error');
         return;
       }
+
+      ui.submitForgotBtn.disabled = true;
+      ui.submitForgotBtn.textContent = 'Sending...';
 
       try {
         const { error } = await state.supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}?reset=1`,
         });
         if (error) throw error;
-        displayAlert(ui.authAlert, 'Password reset email sent. Follow the link to choose a new password.', 'success');
+        displayAlert(ui.forgotAlert, 'Reset link sent! Check your email.', 'success');
+        setTimeout(() => hideForgotPasswordModal(), 2000);
       } catch (error) {
-        displayAlert(ui.authAlert, error.message || 'Unable to send reset email.', 'error');
+        displayAlert(ui.forgotAlert, error.message || 'Unable to send reset email.', 'error');
+      } finally {
+        ui.submitForgotBtn.disabled = false;
+        ui.submitForgotBtn.textContent = 'Send reset link';
       }
     }
 
@@ -1487,6 +1526,9 @@
       if (!session) return;
       state.activeSession = session;
 
+      document.querySelectorAll('.session-card').forEach(card => card.classList.remove('active'));
+      document.querySelector(`[data-session-id="${sessionId}"]`)?.classList.add('active');
+
       let audioPlayer = '';
       if (session.audio_path) {
         try {
@@ -1526,15 +1568,10 @@
         </div>
         ${analysis}
         ${keywords}
+        <button class="btn danger" type="button" onclick="confirmDeleteSession('${sessionId}')">Delete session</button>
       `;
 
-      ui.deleteSessionBtn.onclick = () => confirmDeleteSession(sessionId);
-      ui.sessionModalLayer.classList.remove('hidden');
-    }
-
-    function closeSessionModal() {
-      ui.sessionModalLayer.classList.add('hidden');
-      state.activeSession = null;
+      ui.detailPanel.classList.remove('hidden');
     }
 
     async function confirmDeleteSession(sessionId) {
@@ -1545,7 +1582,7 @@
           .delete()
           .eq('id', sessionId);
         if (error) throw error;
-        closeSessionModal();
+        ui.detailPanel.classList.add('hidden');
         loadSessions();
       } catch (error) {
         alert(error.message || 'Failed to delete session.');
