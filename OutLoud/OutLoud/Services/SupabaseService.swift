@@ -198,9 +198,11 @@ class SupabaseService: ObservableObject {
             let user_id: UUID
             let session_id: String
             let transcript: String
+            let transcript_segments: [TranscriptSegment]?
             let start_time: String
             let end_time: String
             let duration: Double
+            let analysis: AnalysisResult?
             let title: String?
             let audio_path: String?
         }
@@ -209,14 +211,18 @@ class SupabaseService: ObservableObject {
             user_id: user.id,
             session_id: session.id,
             transcript: session.transcript,
+            transcript_segments: session.transcriptSegments,
             start_time: ISO8601DateFormatter().string(from: session.startTime),
             end_time: ISO8601DateFormatter().string(from: session.endTime),
             duration: session.duration,
+            analysis: session.analysis,
             title: session.title,
             audio_path: session.audioFileName
         )
 
-        try await client.database.from("sessions").insert(sessionData).execute()
+        try await client.database.from("sessions")
+            .upsert(sessionData, onConflict: "user_id,session_id")
+            .execute()
     }
 
     func fetchSessions() async throws -> [SavedSession] {
