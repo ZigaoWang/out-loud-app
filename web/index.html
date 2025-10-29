@@ -9,19 +9,19 @@
     :root {
       color-scheme: light;
       --bg-surface: #ffffff;
-      --bg-muted: #f4f6fb;
-      --border: rgba(15, 23, 42, 0.08);
-      --text-primary: #0f172a;
-      --text-secondary: #4b5563;
-      --accent: #2563eb;
-      --accent-dark: #1d4ed8;
-      --accent-soft: rgba(37, 99, 235, 0.08);
-      --danger: #dc2626;
-      --success: #16a34a;
-      --radius-lg: 18px;
+      --bg-muted: #f8f9fa;
+      --border: rgba(0, 0, 0, 0.06);
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b7280;
+      --accent: #007aff;
+      --accent-dark: #0051d5;
+      --accent-soft: rgba(0, 122, 255, 0.1);
+      --danger: #ff3b30;
+      --success: #34c759;
+      --radius-lg: 16px;
       --radius-md: 12px;
-      --radius-sm: 8px;
-      --shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.08);
+      --radius-sm: 10px;
+      --shadow-sm: 0 2px 16px rgba(0, 0, 0, 0.06);
     }
 
     * {
@@ -30,10 +30,11 @@
 
     body {
       margin: 0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: linear-gradient(140deg, #dbeafe 0%, #f8fafc 45%, #ffffff 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      background: #f5f5f7;
       color: var(--text-primary);
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
 
     a {
@@ -66,10 +67,10 @@
     }
 
     .brand h1 {
-      font-size: 28px;
-      font-weight: 700;
+      font-size: 32px;
+      font-weight: 600;
       margin: 0;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
     }
 
     .brand p {
@@ -92,8 +93,8 @@
       background: var(--bg-surface);
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-sm);
-      padding: 32px;
-      border: 1px solid rgba(15, 23, 42, 0.05);
+      padding: 28px;
+      border: 1px solid var(--border);
     }
 
     .card h2 {
@@ -361,13 +362,13 @@
     .btn.primary {
       background: var(--accent);
       color: #fff;
-      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
+      box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2);
     }
 
     .btn.primary:hover {
       background: var(--accent-dark);
       transform: translateY(-1px);
-      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.28);
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
     }
 
     .btn.link {
@@ -458,35 +459,35 @@
     .session-card {
       background: #fff;
       border-radius: var(--radius-md);
-      padding: 20px;
-      border: 1px solid rgba(15, 23, 42, 0.06);
-      transition: transform 0.18s ease, box-shadow 0.2s ease;
+      padding: 18px;
+      border: 1px solid var(--border);
+      transition: all 0.2s ease;
       cursor: pointer;
     }
 
     .session-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      border-color: rgba(0, 0, 0, 0.1);
     }
 
     .session-title {
       font-weight: 600;
-      margin-bottom: 6px;
-      font-size: 18px;
+      margin-bottom: 8px;
+      font-size: 17px;
+      color: var(--text-primary);
     }
 
     .session-meta {
       font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
       color: var(--text-secondary);
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .session-snippet {
       color: var(--text-secondary);
-      line-height: 1.6;
-      font-size: 14px;
+      line-height: 1.5;
+      font-size: 15px;
     }
 
     .session-grid {
@@ -622,8 +623,12 @@
     }
 
     .danger {
-      background: rgba(220, 38, 38, 0.12) !important;
-      color: #b91c1c !important;
+      background: var(--danger) !important;
+      color: #fff !important;
+    }
+
+    .danger:hover {
+      opacity: 0.9;
     }
 
     @media (max-width: 960px) {
@@ -644,8 +649,8 @@
 
     <header class="top-bar">
       <div class="brand">
-        <h1>Out Loud Admin</h1>
-        <p>Review recordings, transcripts, and AI analysis in one place.</p>
+        <h1>Out Loud</h1>
+        <p>Your learning sessions</p>
       </div>
       <div class="user-actions hidden" id="userActions">
         <div class="user-chip">
@@ -659,7 +664,7 @@
     <div class="panel-grid">
       <section class="card" id="authPanel">
         <h2>Welcome back</h2>
-        <p class="subtitle">Securely access your Out Loud sessions with Supabase-authenticated login.</p>
+        <p class="subtitle">Sign in to view your sessions</p>
 
         <div class="auth-tabs">
           <button class="auth-tab active" data-mode="sign-in">Sign In</button>
@@ -684,9 +689,9 @@
           <button class="btn primary" type="submit" id="authSubmitBtn">Continue</button>
         </form>
 
+        <div class="alert hidden" id="authAlert"></div>
         <button class="btn link" id="forgotPasswordBtn" type="button">Forgot password?</button>
         <button class="btn link hidden" id="resendConfirmBtn" type="button">Resend confirmation email</button>
-        <div class="alert hidden" id="authAlert"></div>
       </section>
 
       <section class="card hidden" id="appPanel">
