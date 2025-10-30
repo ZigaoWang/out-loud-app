@@ -1539,13 +1539,19 @@
 
       ui.sessionDetail.innerHTML = `
         <div>
-          <h2>${escapeHtml(session.title || 'Untitled Session')}</h2>
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+            <h2 id="sessionTitle" style="margin: 0; flex: 1;">${escapeHtml(session.title || 'Untitled Session')}</h2>
+            <button class="btn link" onclick="editTitle('${sessionId}')" style="margin: 0; font-size: 14px;">Edit</button>
+          </div>
           <p class="muted" style="margin-top: 4px;">${new Date(session.start_time).toLocaleString()} • ${formatDuration(session.duration)}</p>
         </div>
         ${audioPlayer}
         <div class="detail-section">
-          <h4>Transcript</h4>
-          <p>${escapeHtml(session.transcript)}</p>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <h4 style="margin: 0;">Transcript</h4>
+            <button class="btn link" onclick="editTranscript('${sessionId}')" style="margin: 0; font-size: 14px;">Edit</button>
+          </div>
+          <p id="sessionTranscript">${escapeHtml(session.transcript)}</p>
         </div>
         ${analysis}
         ${keywords}
@@ -1553,6 +1559,50 @@
       `;
 
       ui.detailPanel.classList.remove('hidden');
+    }
+
+    async function editTitle(sessionId) {
+      const session = state.sessions.find(s => String(s.id) === String(sessionId));
+      if (!session) return;
+
+      const newTitle = prompt('Edit title:', session.title || '');
+      if (newTitle === null || newTitle === session.title) return;
+
+      try {
+        const { error } = await state.supabase
+          .from('sessions')
+          .update({ title: newTitle })
+          .eq('id', sessionId);
+        if (error) throw error;
+
+        session.title = newTitle;
+        document.getElementById('sessionTitle').textContent = newTitle || 'Untitled Session';
+        renderSessions(state.sessions);
+      } catch (error) {
+        alert('Failed to update title: ' + error.message);
+      }
+    }
+
+    async function editTranscript(sessionId) {
+      const session = state.sessions.find(s => String(s.id) === String(sessionId));
+      if (!session) return;
+
+      const newTranscript = prompt('Edit transcript:', session.transcript || '');
+      if (newTranscript === null || newTranscript === session.transcript) return;
+
+      try {
+        const { error } = await state.supabase
+          .from('sessions')
+          .update({ transcript: newTranscript })
+          .eq('id', sessionId);
+        if (error) throw error;
+
+        session.transcript = newTranscript;
+        document.getElementById('sessionTranscript').textContent = newTranscript;
+        renderSessions(state.sessions);
+      } catch (error) {
+        alert('Failed to update transcript: ' + error.message);
+      }
     }
 
     async function confirmDeleteSession(sessionId) {

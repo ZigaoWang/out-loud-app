@@ -182,9 +182,10 @@ class SupabaseService: ObservableObject {
         return session.accessToken
     }
 
-    func getAudioURL(path: String) -> URL? {
-        guard currentUser != nil else { return nil }
-        return try? client.storage.from("audio-recordings").getPublicURL(path: path)
+    func getAudioURL(path: String) async throws -> URL {
+        guard currentUser != nil else { throw NSError(domain: "Not authenticated", code: 401) }
+        let signedURL = try await client.storage.from("audio-recordings").createSignedURL(path: path, expiresIn: 3600)
+        return signedURL
     }
 
     func syncSession(_ session: SavedSession) async throws {
@@ -268,26 +269,102 @@ class SupabaseService: ObservableObject {
 struct SessionDTO: Codable {
     let session_id: String
     let transcript: String
+    let transcript_segments: AnyCodable?
     let start_time: String
     let end_time: String
     let duration: Double
+    let analysis: AnyCodable?
     let title: String?
     let audio_path: String?
 
     func toSavedSession() -> SavedSession {
         let formatter = ISO8601DateFormatter()
+
+        var segments: [TranscriptSegment]? = nil
+        var analysisResult: AnalysisResult? = nil
+
+        if let segData = transcript_segments?.value as? [[String: Any]] {
+            segments = segData.compactMap { dict in
+                guard let text = dict["text"] as? String,
+                      let words = dict["words"] as? [[String: Any]],
+                      let startTime = dict["startTime"] as? Double,
+                      let endTime = dict["endTime"] as? Double else { return nil }
+
+                let transcriptWords = words.compactMap { w -> TranscriptWord? in
+                    guard let word = w["word"] as? String,
+                          let st = w["startTime"] as? Double,
+                          let et = w["endTime"] as? Double else { return nil }
+                    return TranscriptWord(word: word, startTime: st, endTime: et)
+                }
+
+                return TranscriptSegment(text: text, words: transcriptWords, startTime: startTime, endTime: endTime)
+            }
+        }
+
+        if let analysisData = analysis?.value as? [String: Any],
+           let data = try? JSONSerialization.data(withJSONObject: analysisData),
+           let result = try? JSONDecoder().decode(AnalysisResult.self, from: data) {
+            analysisResult = result
+        }
+
         return SavedSession(
             id: session_id,
             transcript: transcript,
-            transcriptSegments: nil,
+            transcriptSegments: segments,
             startTime: formatter.date(from: start_time) ?? Date(),
             endTime: formatter.date(from: end_time) ?? Date(),
             duration: duration,
             audioFileName: audio_path,
-            analysis: nil,
+            analysis: analysisResult,
             title: title,
             parentSessionId: nil,
             followUpSessionIds: nil
         )
+    }
+}
+
+struct AnyCodable: Codable {
+    let value: Any
+
+    init(_ value: Any) {
+        self.value = value
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let dict = try? container.decode([String: AnyCodable].self) {
+            value = dict.mapValues { $0.value }
+        } else if let array = try? container.decode([AnyCodable].self) {
+            value = array.map { $0.value }
+        } else if let string = try? container.decode(String.self) {
+            value = string
+        } else if let int = try? container.decode(Int.self) {
+            value = int
+        } else if let double = try? container.decode(Double.self) {
+            value = double
+        } else if let bool = try? container.decode(Bool.self) {
+            value = bool
+        } else {
+            value = NSNull()
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        if let dict = value as? [String: Any] {
+            try container.encode(dict.mapValues { AnyCodable($0) })
+        } else if let array = value as? [Any] {
+            try container.encode(array.map { AnyCodable($0) })
+        } else if let string = value as? String {
+            try container.encode(string)
+        } else if let int = value as? Int {
+            try container.encode(int)
+        } else if let double = value as? Double {
+            try container.encode(double)
+        } else if let bool = value as? Bool {
+            try container.encode(bool)
+        } else {
+            try container.encodeNil()
+        }
     }
 }

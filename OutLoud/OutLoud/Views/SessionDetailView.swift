@@ -342,14 +342,14 @@ struct SessionDetailView: View {
     }
 
     private func setupAudioPlayer() {
-        guard let audioPath = currentSession.audioFileName,
-              let audioURL = SupabaseService.shared.getAudioURL(path: audioPath) else {
+        guard let audioPath = currentSession.audioFileName else {
             print("⚠️ No audio file available")
             return
         }
 
         Task {
             do {
+                let audioURL = try await SupabaseService.shared.getAudioURL(path: audioPath)
                 let (data, _) = try await URLSession.shared.data(from: audioURL)
                 let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
                 try data.write(to: tempURL)
@@ -379,7 +379,10 @@ struct SessionDetailView: View {
     }
 
     private func togglePlayback() {
-        guard let player = audioPlayer else { return }
+        guard let player = audioPlayer else {
+            setupAudioPlayer()
+            return
+        }
 
         if isPlaying {
             player.pause()
