@@ -87,7 +87,7 @@
       width: 100%;
       margin: 0 auto;
       flex: 1;
-      align-items: start;
+      height: calc(100vh - 200px);
     }
 
     .card {
@@ -96,6 +96,9 @@
       box-shadow: var(--shadow-sm);
       padding: 28px;
       border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     .card h2 {
@@ -467,11 +470,6 @@
       cursor: pointer;
     }
 
-    .session-card:hover {
-      background: #fafafa;
-      border-color: rgba(0, 0, 0, 0.12);
-    }
-
     .session-card.active {
       background: var(--accent-soft);
       border-color: var(--accent);
@@ -498,7 +496,9 @@
 
     .session-grid {
       display: grid;
-      gap: 16px;
+      gap: 12px;
+      overflow-y: auto;
+      flex: 1;
     }
 
     .search-bar {
@@ -521,41 +521,16 @@
       opacity: 0.6;
     }
 
-    .user-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      background: #fff;
-      padding: 10px 16px;
-      border-radius: 999px;
-      border: 1px solid rgba(15, 23, 42, 0.08);
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
-      font-size: 14px;
-    }
-
     .user-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 16px;
     }
 
     .muted {
       color: var(--text-secondary);
     }
 
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(37, 99, 235, 0.1);
-      color: var(--accent);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-weight: 600;
-    }
 
     .empty-state {
       text-align: center;
@@ -614,7 +589,8 @@
       background: var(--bg-muted);
       border-radius: var(--radius-md);
       padding: 16px 20px;
-      border: 1px solid rgba(15, 23, 42, 0.05);
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
     }
 
     .detail-section h4 {
@@ -626,6 +602,10 @@
       margin: 0;
       line-height: 1.7;
       color: var(--text-secondary);
+    }
+
+    #detailPanel {
+      overflow-y: auto;
     }
 
     .danger {
@@ -659,11 +639,10 @@
         <p>Your learning sessions</p>
       </div>
       <div class="user-actions hidden" id="userActions">
-        <div class="user-chip">
-          <span class="tag">Signed In</span>
-          <span id="activeUserEmail"></span>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: #fff; border-radius: 12px; border: 1px solid var(--border);">
+          <span id="activeUserEmail" style="color: var(--text-primary); font-size: 14px; font-weight: 500;"></span>
+          <button class="btn link" id="signOutBtn" style="margin: 0;">Sign Out</button>
         </div>
-        <button class="btn" id="signOutBtn">Sign Out</button>
       </div>
     </header>
 
@@ -701,7 +680,7 @@
       </section>
 
       <section class="card hidden" id="appPanel">
-        <div class="input-group">
+        <div class="input-group" style="margin-bottom: 20px;">
           <label for="searchInput">Search Sessions</label>
           <div class="search-bar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1455,10 +1434,12 @@
       hideStatusPanel();
       ui.authPanel.classList.remove('hidden');
       ui.appPanel.classList.add('hidden');
+      ui.detailPanel.classList.add('hidden');
       ui.userActions.classList.add('hidden');
       ui.activeUserEmail.textContent = '';
       ui.sessionsList.innerHTML = '';
       state.sessions = [];
+      state.activeSession = null;
     }
 
     async function loadSessions() {
