@@ -124,11 +124,9 @@ class SessionViewModel: ObservableObject {
         }
 
         state = .preparing
-        session.startTime = Date()
         elapsedTime = 0
         fullTranscript = ""
         isIgnoringInitialTranscript = true
-        startDurationTimer()
 
         Task {
             do {
@@ -140,7 +138,6 @@ class SessionViewModel: ObservableObject {
                 await MainActor.run {
                     self.errorMessage = "Session expired. Please sign in again."
                     self.state = .idle
-                    self.stopDurationTimer()
                 }
             }
         }
@@ -215,6 +212,8 @@ class SessionViewModel: ObservableObject {
                 guard let self = self else { return }
 
                 do {
+                    self.session.startTime = Date()
+                    self.startDurationTimer()
                     try self.audioService.startRecording()
                     self.state = .recording
                     self.session.isRecording = true
