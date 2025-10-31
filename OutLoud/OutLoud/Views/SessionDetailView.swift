@@ -17,6 +17,7 @@ struct SessionDetailView: View {
     @State private var isEditingTitle = false
     @State private var editedTitle = ""
     @State private var showDeleteConfirmation = false
+    @State private var showShareSheet = false
     @Environment(\.presentationMode) var presentationMode
 
     private let theme = DashboardTheme.self
@@ -56,6 +57,12 @@ struct SessionDetailView: View {
         .navigationTitle(currentSession.displayTitle)
         .toolbar {
             Menu {
+                Button {
+                    showShareSheet = true
+                } label: {
+                    Label("Export Transcript", systemImage: "square.and.arrow.up")
+                }
+
                 Button(role: .destructive) {
                     showDeleteConfirmation = true
                 } label: {
@@ -64,6 +71,9 @@ struct SessionDetailView: View {
             } label: {
                 Image(systemName: "ellipsis.circle")
             }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            ShareSheet(items: [exportTranscript()])
         }
         .alert("Delete Session", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
@@ -444,6 +454,54 @@ struct SessionDetailView: View {
         return 40
         #endif
     }
+
+    private func exportTranscript() -> URL {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+
+        var text = """
+        Out Loud Session
+        ================
+
+        Title: \(currentSession.displayTitle)
+        Date: \(formatter.string(from: currentSession.startTime))
+        Duration: \(formatTime(currentSession.duration))
+
+        Transcript
+        ----------
+        \(currentSession.transcript)
+
+        """
+
+        if let analysis = currentSession.analysis {
+            text += """
+
+            AI Analysis
+            -----------
+            \(analysis.summary)
+
+            Keywords: \(analysis.keywords.joined(separator: ", "))
+
+            Feedback: \(analysis.feedback)
+
+            """
+        }
+
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(currentSession.displayTitle).txt")
+        try? text.write(to: tempURL, atomically: true, encoding: .utf8)
+        return tempURL
+    }
+}
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - AVAudioPlayer Delegate Helper
