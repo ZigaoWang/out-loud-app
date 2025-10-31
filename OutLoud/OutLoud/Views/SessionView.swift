@@ -33,6 +33,7 @@ private enum SessionTheme {
 struct SessionView: View {
     let parentSessionId: String?
     @StateObject private var viewModel: SessionViewModel
+    @StateObject private var sessionManager = SessionManager.shared
     @Environment(\.presentationMode) var presentationMode
 
     init(parentSessionId: String? = nil) {
@@ -93,6 +94,10 @@ struct SessionView: View {
 
             if let error = viewModel.errorMessage {
                 errorBanner(error)
+            }
+
+            if sessionManager.isUploading {
+                uploadProgressOverlay
             }
         }
         .navigationBarBackButtonHidden(viewModel.state == .recording)
@@ -597,6 +602,24 @@ struct SessionView: View {
             .padding(.horizontal, SessionTheme.Spacing.xl)
         }
         .transition(.opacity)
+    }
+
+    private var uploadProgressOverlay: some View {
+        VStack {
+            Spacer()
+            HStack(spacing: 10) {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                Text("Saving...")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color.black.opacity(0.85))
+            .clipShape(Capsule())
+            .padding(.bottom, 100)
+        }
     }
 
     private func errorBanner(_ error: String) -> some View {
