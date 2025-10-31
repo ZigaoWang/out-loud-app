@@ -1,8 +1,13 @@
 import SwiftUI
+import AVFoundation
 
 @main
 struct OutLoudApp: App {
     @StateObject private var supabase = SupabaseService.shared
+
+    init() {
+        requestPermissions()
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -12,5 +17,9 @@ struct OutLoudApp: App {
                 AuthView()
             }
         }
+    }
+
+    private func requestPermissions() {
+        AVAudioSession.sharedInstance().requestRecordPermission { _ in }
     }
 }
