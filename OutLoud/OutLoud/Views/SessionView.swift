@@ -96,7 +96,6 @@ struct SessionView: View {
             }
         }
         .navigationBarBackButtonHidden(viewModel.state == .recording)
-        .navigationBarItems(leading: backButton)
         .animation(.easeInOut(duration: 0.25), value: viewModel.state)
         .animation(.easeInOut(duration: 0.25), value: viewModel.analysisResult != nil)
         .onAppear {
@@ -553,11 +552,8 @@ struct SessionView: View {
             }
             presentationMode.wrappedValue.dismiss()
         }) {
-            HStack(spacing: SessionTheme.Spacing.xs) {
-                Image(systemName: "chevron.left")
-                Text("Back")
-            }
-            .foregroundColor(SessionTheme.textPrimary)
+            Image(systemName: "chevron.left")
+                .foregroundColor(SessionTheme.textPrimary)
         }
     }
 
