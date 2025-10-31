@@ -473,28 +473,32 @@ struct SessionView: View {
     // MARK: - Actions
 
     private var controlButton: some View {
-        Button(action: handlePrimaryAction) {
-            HStack {
-                Spacer()
+        Group {
+            if viewModel.state != .completed {
+                Button(action: handlePrimaryAction) {
+                    HStack {
+                        Spacer()
 
-                if viewModel.state == .processing {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                } else {
-                    Text(buttonTitle)
-                        .font(.system(size: 16, weight: .semibold))
+                        if viewModel.state == .processing {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        } else {
+                            Text(buttonTitle)
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+
+                        Spacer()
+                    }
+                    .padding(.vertical, 18)
+                    .foregroundColor(.white)
+                    .background(buttonColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .opacity((viewModel.state == .processing || viewModel.state == .preparing) ? 0.5 : 1.0)
                 }
-
-                Spacer()
+                .buttonStyle(ScaleButtonStyle())
+                .disabled(viewModel.state == .processing || viewModel.state == .preparing)
             }
-            .padding(.vertical, 18)
-            .foregroundColor(.white)
-            .background(buttonColor)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .opacity((viewModel.state == .processing || viewModel.state == .preparing) ? 0.5 : 1.0)
         }
-        .buttonStyle(ScaleButtonStyle())
-        .disabled(viewModel.state == .processing || viewModel.state == .preparing)
     }
 
     private func handlePrimaryAction() {
@@ -508,7 +512,7 @@ struct SessionView: View {
         case .processing:
             break
         case .completed:
-            viewModel.resetSession()
+            break
         }
     }
 
@@ -523,7 +527,7 @@ struct SessionView: View {
         case .processing:
             return "Processing"
         case .completed:
-            return "Start Again"
+            return ""
         }
     }
 
