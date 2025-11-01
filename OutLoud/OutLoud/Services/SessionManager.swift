@@ -6,6 +6,7 @@ class SessionManager: ObservableObject {
     @Published var savedSessions: [SavedSession] = []
     @Published var uploadProgress: Double = 0.0
     @Published var isUploading: Bool = false
+    @Published var uploadSuccess: Bool = false
 
     init() {
         // Cloud-only, no local storage
@@ -74,7 +75,13 @@ class SessionManager: ObservableObject {
                     isUploading = false
                     throw error
                 }
+
+                uploadSuccess = true
                 isUploading = false
+
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                uploadSuccess = false
+
                 await loadSessions()
             } catch {
                 isUploading = false

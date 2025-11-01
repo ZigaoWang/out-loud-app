@@ -96,7 +96,7 @@ struct SessionView: View {
                 errorBanner(error)
             }
 
-            if sessionManager.isUploading {
+            if sessionManager.isUploading || sessionManager.uploadSuccess {
                 uploadProgressOverlay
             }
         }
@@ -608,18 +608,30 @@ struct SessionView: View {
         VStack {
             Spacer()
             HStack(spacing: 10) {
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                Text("Saving...")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white)
+                if sessionManager.uploadSuccess {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.system(size: 18))
+                    Text("Saved")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white)
+                } else {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(0.8)
+                    Text("Saving...")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white)
+                }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 18)
             .padding(.vertical, 10)
             .background(Color.black.opacity(0.85))
             .clipShape(Capsule())
-            .padding(.bottom, 100)
+            .padding(.bottom, 40)
         }
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: sessionManager.uploadSuccess)
     }
 
     private func errorBanner(_ error: String) -> some View {
