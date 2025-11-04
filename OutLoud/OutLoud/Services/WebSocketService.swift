@@ -6,18 +6,38 @@ class WebSocketService: WebSocketDelegate {
     private let serverURL: String
     private var transcriptWords: [TranscriptWord] = []
 
+    // Reconnection state
+    private var sessionId: String?
+    private var token: String?
+    private var reconnectAttempts = 0
+    private var maxReconnectAttempts = 5
+    private var reconnectTimer: Timer?
+    private var isIntentionalDisconnect = false
+    private var audioBuffer: [Data] = []
+    private var isBuffering = false
+
     var onConnected: (() -> Void)?
     var onTranscript: ((String, Bool) -> Void)?
     var onCaption: ((String) -> Void)?
     var onInteraction: ((String) -> Void)?
     var onAnalysis: ((AnalysisResult, [TranscriptWord]?) -> Void)?
     var onError: ((String) -> Void)?
+    var onReconnecting: (() -> Void)?
 
     init(serverURL: String = "wss://api.out-loud.app") {
         self.serverURL = serverURL
     }
 
     func connect(sessionId: String, token: String) {
+        self.sessionId = sessionId
+        self.token = token
+        self.isIntentionalDisconnect = false
+        attemptConnection()
+    }
+
+    private func attemptConnection() {
+        guard let sessionId = sessionId, let token = token else { return }
+
         let urlString = "\(serverURL)?sessionId=\(sessionId)"
         guard let url = URL(string: urlString) else {
             onError?("Invalid URL")
@@ -34,16 +54,31 @@ class WebSocketService: WebSocketDelegate {
     }
 
     func disconnect() {
+        isIntentionalDisconnect = true
+        reconnectTimer?.invalidate()
+        reconnectTimer = nil
         socket?.disconnect()
         socket = nil
+        sessionId = nil
+        token = nil
+        reconnectAttempts = 0
+        audioBuffer.removeAll()
+        isBuffering = false
     }
 
     func sendAudio(_ data: Data) {
-        socket?.write(data: data)
+        if isBuffering {
+            audioBuffer.append(data)
+        } else if socket != nil {
+            socket?.write(data: data)
+        } else {
+            isBuffering = true
+            audioBuffer.append(data)
+        }
     }
 
     func endSession() {
-        // Send empty buffer to signal end
+        isIntentionalDisconnect = true
         socket?.write(data: Data())
     }
 
@@ -53,10 +88,13 @@ class WebSocketService: WebSocketDelegate {
         switch event {
         case .connected(_):
             print("WebSocket connected")
+            reconnectAttempts = 0
+            flushAudioBuffer()
             onConnected?()
 
         case .disconnected(let reason, let code):
             print("WebSocket disconnected: \(reason) with code: \(code)")
+            handleDisconnection(code: code)
 
         case .text(let string):
             handleMessage(string)
@@ -66,7 +104,10 @@ class WebSocketService: WebSocketDelegate {
 
         case .error(let error):
             print("WebSocket error: \(error?.localizedDescription ?? "unknown")")
-            onError?(error?.localizedDescription ?? "Connection error")
+            if !isIntentionalDisconnect {
+                isBuffering = true
+                scheduleReconnect()
+            }
 
         case .cancelled:
             print("WebSocket cancelled")
@@ -74,6 +115,44 @@ class WebSocketService: WebSocketDelegate {
         default:
             break
         }
+    }
+
+    private func handleDisconnection(code: UInt16) {
+        guard !isIntentionalDisconnect else { return }
+
+        if code != 1000 && code != 1001 {
+            isBuffering = true
+            scheduleReconnect()
+        }
+    }
+
+    private func scheduleReconnect() {
+        guard reconnectAttempts < maxReconnectAttempts else {
+            onError?("Connection lost. Please restart session.")
+            return
+        }
+
+        reconnectAttempts += 1
+        let delay = min(pow(2.0, Double(reconnectAttempts)), 30.0)
+
+        print("Reconnecting in \(delay)s (attempt \(reconnectAttempts)/\(maxReconnectAttempts))")
+        onReconnecting?()
+
+        reconnectTimer?.invalidate()
+        reconnectTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
+            self?.attemptConnection()
+        }
+    }
+
+    private func flushAudioBuffer() {
+        guard !audioBuffer.isEmpty, socket != nil else { return }
+
+        print("Flushing \(audioBuffer.count) buffered audio packets")
+        for data in audioBuffer {
+            socket?.write(data: data)
+        }
+        audioBuffer.removeAll()
+        isBuffering = false
     }
 
     private func handleMessage(_ message: String) {
@@ -146,5 +225,10 @@ class WebSocketService: WebSocketDelegate {
             followUpQuestion: data["followUpQuestion"] as? String ?? "",
             title: data["title"] as? String ?? nil
         )
+    }
+
+    deinit {
+        reconnectTimer?.invalidate()
+        disconnect()
     }
 }

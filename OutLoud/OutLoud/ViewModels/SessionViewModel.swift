@@ -108,10 +108,18 @@ class SessionViewModel: ObservableObject {
             }
         }
 
+        webSocketService.onReconnecting = { [weak self] in
+            DispatchQueue.main.async {
+                self?.errorMessage = "Reconnecting..."
+            }
+        }
+
         webSocketService.onError = { [weak self] error in
             DispatchQueue.main.async {
                 self?.errorMessage = error
-                self?.state = .idle
+                if error.contains("restart session") {
+                    self?.state = .idle
+                }
             }
         }
     }
