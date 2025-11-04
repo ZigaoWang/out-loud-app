@@ -12,39 +12,19 @@ Voice recording app with real-time transcription and AI analysis.
 
 ## Setup
 
-### Backend
-```bash
-cd backend
-npm install
-cp .env.example .env
-# Edit .env with your API keys
-npm run dev
-```
-
-### Web App
-```bash
-cd web
-cp config.example.json config.json
-# Edit config.json with Supabase credentials
-open index.html
-```
-
-### iOS App
-1. Open `OutLoud/OutLoud.xcodeproj` in Xcode
-2. Copy `Config.example.plist` to `Config.plist`
-3. Add Supabase credentials to `Config.plist`
-4. Build and run
-
-### Database
-Run `backend/supabase-schema.sql` in your Supabase SQL Editor.
+For detailed setup and deployment instructions, see [SETUP.md](SETUP.md).
 
 ## Environment Variables
 
 Backend (.env):
 ```
-SUPABASE_URL=your-url
-SUPABASE_SERVICE_KEY=your-service-key
 SONIOX_API_KEY=your-soniox-key
+OPENAI_API_KEY=your-openai-key
+OPENAI_BASE_URL=https://api.uniapi.io
+SUPABASE_URL=your-supabase-url
+SUPABASE_SERVICE_KEY=your-service-key
+SUPABASE_ANON_KEY=your-anon-key
+ALLOWED_ORIGINS=null
 ```
 
 Web (config.json):
