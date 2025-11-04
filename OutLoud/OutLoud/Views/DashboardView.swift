@@ -28,8 +28,12 @@ struct DashboardView: View {
                         statsSection
                         startButton
 
-                        if !sessionManager.savedSessions.isEmpty {
+                        if sessionManager.isLoadingSessions {
+                            loadingSection
+                        } else if !sessionManager.savedSessions.isEmpty {
                             historySection
+                        } else {
+                            emptySection
                         }
                     }
                     .padding(.horizontal, adaptivePadding)
@@ -153,6 +157,38 @@ struct DashboardView: View {
                 )
         }
         .buttonStyle(ScaleButtonStyle())
+    }
+
+    // MARK: - Loading
+
+    private var loadingSection: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.2)
+            Text("Loading sessions...")
+                .font(.system(size: 15))
+                .foregroundColor(DashboardTheme.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+    }
+
+    // MARK: - Empty
+
+    private var emptySection: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "mic.slash")
+                .font(.system(size: 48))
+                .foregroundColor(DashboardTheme.textTertiary.opacity(0.5))
+            Text("No sessions yet")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(DashboardTheme.textPrimary)
+            Text("Start your first recording to see it here")
+                .font(.system(size: 14))
+                .foregroundColor(DashboardTheme.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
     }
 
     // MARK: - History

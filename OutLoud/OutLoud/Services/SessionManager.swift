@@ -7,6 +7,7 @@ class SessionManager: ObservableObject {
     @Published var uploadProgress: Double = 0.0
     @Published var isUploading: Bool = false
     @Published var uploadSuccess: Bool = false
+    @Published var isLoadingSessions: Bool = false
 
     init() {
         // Cloud-only, no local storage
@@ -91,13 +92,21 @@ class SessionManager: ObservableObject {
     }
 
     func loadSessions() async {
+        await MainActor.run {
+            self.isLoadingSessions = true
+        }
+
         do {
             let sessions = try await SupabaseService.shared.fetchSessions()
             await MainActor.run {
                 self.savedSessions = sessions
+                self.isLoadingSessions = false
             }
         } catch {
             print("❌ Failed to load sessions: \(error)")
+            await MainActor.run {
+                self.isLoadingSessions = false
+            }
         }
     }
 
