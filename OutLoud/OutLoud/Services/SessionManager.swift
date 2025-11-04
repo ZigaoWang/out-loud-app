@@ -9,6 +9,8 @@ class SessionManager: ObservableObject {
     @Published var uploadSuccess: Bool = false
     @Published var isLoadingSessions: Bool = false
 
+    private var loadTask: Task<Void, Never>?
+
     init() {
         // Cloud-only, no local storage
     }
@@ -92,22 +94,30 @@ class SessionManager: ObservableObject {
     }
 
     func loadSessions() async {
-        await MainActor.run {
-            self.isLoadingSessions = true
+        loadTask?.cancel()
+
+        loadTask = Task {
+            await MainActor.run {
+                self.isLoadingSessions = true
+            }
+
+            do {
+                let sessions = try await SupabaseService.shared.fetchSessions()
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    self.savedSessions = sessions
+                    self.isLoadingSessions = false
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                print("❌ Failed to load sessions: \(error)")
+                await MainActor.run {
+                    self.isLoadingSessions = false
+                }
+            }
         }
 
-        do {
-            let sessions = try await SupabaseService.shared.fetchSessions()
-            await MainActor.run {
-                self.savedSessions = sessions
-                self.isLoadingSessions = false
-            }
-        } catch {
-            print("❌ Failed to load sessions: \(error)")
-            await MainActor.run {
-                self.isLoadingSessions = false
-            }
-        }
+        await loadTask?.value
     }
 
     func deleteSession(_ session: SavedSession) {
