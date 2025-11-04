@@ -18,6 +18,7 @@
 		A295B6182EAC8C0D00A484D8 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A295B6152EAC8C0D00A484D8 /* AuthView.swift */; };
 		A295B61A2EACB18000A484D8 /* Config.plist in Resources */ = {isa = PBXBuildFile; fileRef = A295B6192EACB18000A484D8 /* Config.plist */; };
 		A2D010C62EB346CA00A423A6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2D010C52EB346CA00A423A6 /* Assets.xcassets */; };
+		A2F1CFD22EB9A31500636601 /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F1CFD02EB9A31500636601 /* AppConstants.swift */; };
 		AA0000010000000000000001 /* OutLoudApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000001 /* OutLoudApp.swift */; };
 		AA0000030000000000000001 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000040000000000000001 /* Models.swift */; };
 		AA0000050000000000000001 /* AudioRecordingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000060000000000000001 /* AudioRecordingService.swift */; };
@@ -38,6 +39,7 @@
 		A295B6162EAC8C0D00A484D8 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		A295B6192EACB18000A484D8 /* Config.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Config.plist; sourceTree = "<group>"; };
 		A2D010C52EB346CA00A423A6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A2F1CFD02EB9A31500636601 /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
 		AA0000010000000000000002 /* OutLoud.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OutLoud.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000020000000000000001 /* OutLoudApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutLoudApp.swift; sourceTree = "<group>"; };
 		AA0000040000000000000001 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -71,6 +73,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A2F1CFD12EB9A31500636601 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				A2F1CFD02EB9A31500636601 /* AppConstants.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
 		AA0000130000000000000001 = {
 			isa = PBXGroup;
 			children = (
@@ -86,6 +96,7 @@
 			children = (
 				AA0000020000000000000001 /* OutLoudApp.swift */,
 				AA0000110000000000000001 /* Info.plist */,
+				A2F1CFD12EB9A31500636601 /* Utils */,
 				AA0000160000000000000001 /* Models */,
 				AA0000170000000000000001 /* Services */,
 				AA0000180000000000000001 /* ViewModels */,
@@ -230,6 +241,7 @@
 				A295B6142EAC8BFD00A484D8 /* SupabaseService.swift in Sources */,
 				AA0000030000000000000001 /* Models.swift in Sources */,
 				A295B6172EAC8C0D00A484D8 /* DesignSystem.swift in Sources */,
+				A2F1CFD22EB9A31500636601 /* AppConstants.swift in Sources */,
 				A295B6182EAC8C0D00A484D8 /* AuthView.swift in Sources */,
 				AA0000050000000000000001 /* AudioRecordingService.swift in Sources */,
 				AA0000070000000000000001 /* WebSocketService.swift in Sources */,

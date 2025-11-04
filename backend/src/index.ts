@@ -64,27 +64,42 @@ app.use('/upload', uploadRoutes);
 
 // WebSocket connection handler
 wss.on('connection', async (ws: WebSocket, req) => {
-  const url = new URL(req.url!, `http://${req.headers.host}`);
-  const sessionId = url.searchParams.get('sessionId');
-
-  if (!sessionId || sessionId.length > 255) {
-    ws.send(JSON.stringify({ type: 'error', message: 'Invalid session ID' }));
-    ws.close(1008, 'Invalid session ID');
-    return;
-  }
-
-  const authHeader = req.headers['authorization'];
-  const rawToken = Array.isArray(authHeader) ? authHeader[0] : authHeader;
-
-  if (!rawToken || !rawToken.toLowerCase().startsWith('bearer ')) {
-    ws.send(JSON.stringify({ type: 'error', message: 'Unauthorized WebSocket connection' }));
-    ws.close(1008, 'Unauthorized');
-    return;
-  }
-
-  const accessToken = rawToken.replace(/^[Bb]earer\s+/, '');
-
   try {
+    const url = new URL(req.url!, `http://${req.headers.host}`);
+    const sessionId = url.searchParams.get('sessionId');
+
+    // Validate session ID
+    if (!sessionId) {
+      ws.send(JSON.stringify({ type: 'error', message: 'Session ID is required' }));
+      ws.close(1008, 'Missing session ID');
+      return;
+    }
+
+    if (sessionId.length > 255 || !/^[a-zA-Z0-9-_]+$/.test(sessionId)) {
+      ws.send(JSON.stringify({ type: 'error', message: 'Invalid session ID format' }));
+      ws.close(1008, 'Invalid session ID');
+      return;
+    }
+
+    // Validate authorization header
+    const authHeader = req.headers['authorization'];
+    const rawToken = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+
+    if (!rawToken || !rawToken.toLowerCase().startsWith('bearer ')) {
+      ws.send(JSON.stringify({ type: 'error', message: 'Missing or invalid authorization header' }));
+      ws.close(1008, 'Unauthorized');
+      return;
+    }
+
+    const accessToken = rawToken.replace(/^[Bb]earer\s+/, '');
+
+    if (!accessToken || accessToken.length < 10) {
+      ws.send(JSON.stringify({ type: 'error', message: 'Invalid access token' }));
+      ws.close(1008, 'Unauthorized');
+      return;
+    }
+
+    // Verify token with Supabase
     const { data, error } = await supabaseService.verifyToken(accessToken);
 
     if (error || !data?.user?.id) {
@@ -93,13 +108,13 @@ wss.on('connection', async (ws: WebSocket, req) => {
       return;
     }
 
-    console.log(`New WebSocket connection: ${sessionId} (user: ${data.user.id})`);
+    console.log(`✅ WebSocket connected: ${sessionId} (user: ${data.user.id})`);
 
     transcriptionController.handleConnection(ws, sessionId, data.user.id);
   } catch (err) {
-    console.error('WebSocket auth error:', err);
-    ws.send(JSON.stringify({ type: 'error', message: 'Authentication failed' }));
-    ws.close(1011, 'Authentication failed');
+    console.error('❌ WebSocket connection error:', err);
+    ws.send(JSON.stringify({ type: 'error', message: 'Connection failed' }));
+    ws.close(1011, 'Internal error');
   }
 });
 

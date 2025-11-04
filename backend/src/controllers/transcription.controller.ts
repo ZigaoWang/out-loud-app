@@ -105,6 +105,10 @@ export class TranscriptionController {
         if (data.length === 0) {
           // End signal
           await this.endSession(sessionId);
+        } else if (data.length > 1024 * 1024) {
+          // Reject audio chunks larger than 1MB
+          console.error('❌ Audio chunk too large:', data.length);
+          ws.send(JSON.stringify({ type: 'error', message: 'Audio chunk too large' }));
         } else {
           // Forward audio to Soniox
           sonioxService.sendAudio(data);
@@ -145,7 +149,12 @@ export class TranscriptionController {
         .trim();
 
       if (!transcript) {
-        console.log('No transcript to analyze');
+        console.log('⚠️ No transcript to analyze');
+        return;
+      }
+
+      if (transcript.length > 50000) {
+        console.error('❌ Transcript too long:', transcript.length);
         return;
       }
 
