@@ -17,12 +17,10 @@ class SessionViewModel: ObservableObject {
     private var recordingPreparationWorkItem: DispatchWorkItem?
     private var ignoreInitialTranscriptWorkItem: DispatchWorkItem?
     private var isIgnoringInitialTranscript = false
-    private let recordingPreparationDelay: TimeInterval = 0.6
-    private let initialTranscriptIgnoreDuration: TimeInterval = 0.8
     private let parentSessionId: String?
 
     init(
-        serverURL: String = "wss://api.out-loud.app",
+        serverURL: String = AppConstants.Network.defaultWebSocketURL,
         parentSessionId: String? = nil,
         supabaseService: SupabaseService = .shared
     ) {
@@ -166,7 +164,7 @@ class SessionViewModel: ObservableObject {
     // MARK: - Duration Timer
     private func startDurationTimer() {
         stopDurationTimer()
-        durationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+        durationTimer = Timer.scheduledTimer(withTimeInterval: AppConstants.UI.durationTimerInterval, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             self.elapsedTime = Date().timeIntervalSince(self.session.startTime)
         }
@@ -187,7 +185,6 @@ class SessionViewModel: ObservableObject {
 
     private func beginRecordingWithDelay() {
         DispatchQueue.main.async {
-            let delay = self.recordingPreparationDelay
             self.recordingPreparationWorkItem?.cancel()
 
             let preparationWorkItem = DispatchWorkItem { [weak self] in
@@ -208,7 +205,7 @@ class SessionViewModel: ObservableObject {
             }
 
             self.recordingPreparationWorkItem = preparationWorkItem
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: preparationWorkItem)
+            DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.Recording.preparationDelay, execute: preparationWorkItem)
         }
     }
 
@@ -221,6 +218,6 @@ class SessionViewModel: ObservableObject {
         }
 
         ignoreInitialTranscriptWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + initialTranscriptIgnoreDuration, execute: workItem)
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.Recording.initialTranscriptIgnoreDuration, execute: workItem)
     }
 }

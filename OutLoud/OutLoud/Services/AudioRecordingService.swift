@@ -96,8 +96,8 @@ class AudioRecordingService: NSObject {
         // Create target format for Soniox (PCM F32LE, 16kHz, mono)
         guard let targetFormat = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
-            sampleRate: 16000,
-            channels: 1,
+            sampleRate: AppConstants.Recording.targetSampleRate,
+            channels: AppConstants.Recording.targetChannels,
             interleaved: false
         ) else {
             throw RecordingError.invalidFormat
@@ -108,8 +108,8 @@ class AudioRecordingService: NSObject {
         // Create audio file for recording with AAC settings
         let settings: [String: Any] = [
             AVFormatIDKey: kAudioFormatMPEG4AAC,
-            AVSampleRateKey: 16000,
-            AVNumberOfChannelsKey: 1,
+            AVSampleRateKey: AppConstants.Recording.targetSampleRate,
+            AVNumberOfChannelsKey: AppConstants.Recording.targetChannels,
             AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
         ]
 
@@ -132,7 +132,7 @@ class AudioRecordingService: NSObject {
         do {
             inputNode.installTap(
                 onBus: 0,
-                bufferSize: 4096,
+                bufferSize: AppConstants.Recording.audioBufferSize,
                 format: inputFormat
             ) { [weak self] buffer, time in
                 guard let self = self, self.isRecording else { return }

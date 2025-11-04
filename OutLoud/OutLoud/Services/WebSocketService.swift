@@ -10,7 +10,6 @@ class WebSocketService: WebSocketDelegate {
     private var sessionId: String?
     private var token: String?
     private var reconnectAttempts = 0
-    private var maxReconnectAttempts = 5
     private var reconnectTimer: Timer?
     private var isIntentionalDisconnect = false
     private var audioBuffer: [Data] = []
@@ -22,8 +21,13 @@ class WebSocketService: WebSocketDelegate {
     var onError: ((String) -> Void)?
     var onReconnecting: (() -> Void)?
 
-    init(serverURL: String = "wss://api.out-loud.app") {
+    init(serverURL: String = AppConstants.Network.defaultWebSocketURL) {
         self.serverURL = serverURL
+        #if DEBUG
+        print("🔧 WebSocket: Development mode - \(serverURL)")
+        #else
+        print("🚀 WebSocket: Production mode - \(serverURL)")
+        #endif
     }
 
     func connect(sessionId: String, token: String) {
@@ -43,7 +47,7 @@ class WebSocketService: WebSocketDelegate {
         }
 
         var request = URLRequest(url: url)
-        request.timeoutInterval = 5
+        request.timeoutInterval = AppConstants.Network.connectionTimeout
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         socket = WebSocket(request: request)
@@ -125,15 +129,15 @@ class WebSocketService: WebSocketDelegate {
     }
 
     private func scheduleReconnect() {
-        guard reconnectAttempts < maxReconnectAttempts else {
+        guard reconnectAttempts < AppConstants.Network.maxReconnectAttempts else {
             onError?("Connection lost. Please restart session.")
             return
         }
 
         reconnectAttempts += 1
-        let delay = min(pow(2.0, Double(reconnectAttempts)), 30.0)
+        let delay = min(pow(2.0, Double(reconnectAttempts)), AppConstants.Network.maxReconnectDelay)
 
-        print("Reconnecting in \(delay)s (attempt \(reconnectAttempts)/\(maxReconnectAttempts))")
+        print("Reconnecting in \(delay)s (attempt \(reconnectAttempts)/\(AppConstants.Network.maxReconnectAttempts))")
         onReconnecting?()
 
         reconnectTimer?.invalidate()
