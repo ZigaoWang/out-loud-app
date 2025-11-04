@@ -3,10 +3,7 @@ import Combine
 
 class SessionViewModel: ObservableObject {
     @Published var state: RecordingState = .idle
-    @Published var currentCaption: String = ""
-    @Published var displayedCaption: String = ""
-    @Published var fullTranscript: String = "" // Single flowing transcript
-    @Published var interactionQuestion: String?
+    @Published var fullTranscript: String = ""
     @Published var analysisResult: AnalysisResult?
     @Published var errorMessage: String?
     @Published var audioLevel: Float = 0.0
@@ -16,7 +13,6 @@ class SessionViewModel: ObservableObject {
     private let audioService: AudioRecordingService
     private let webSocketService: WebSocketService
     private let supabaseService: SupabaseService
-    private var captionTimer: Timer?
     private var durationTimer: Timer?
     private var recordingPreparationWorkItem: DispatchWorkItem?
     private var ignoreInitialTranscriptWorkItem: DispatchWorkItem?
@@ -24,8 +20,6 @@ class SessionViewModel: ObservableObject {
     private let recordingPreparationDelay: TimeInterval = 0.6
     private let initialTranscriptIgnoreDuration: TimeInterval = 0.8
     private let parentSessionId: String?
-    private var lastCaptionTime: Date?
-    private var previousCaption: String = ""
 
     init(
         serverURL: String = "wss://api.out-loud.app",
@@ -65,16 +59,6 @@ class SessionViewModel: ObservableObject {
                 if isFinal {
                     self.session.transcript = text
                 }
-            }
-        }
-
-        webSocketService.onCaption = { [weak self] caption in
-            // Disabled for now
-        }
-
-        webSocketService.onInteraction = { [weak self] question in
-            DispatchQueue.main.async {
-                self?.interactionQuestion = question
             }
         }
 
@@ -164,22 +148,13 @@ class SessionViewModel: ObservableObject {
         webSocketService.endSession()
     }
 
-    func dismissInteractionQuestion() {
-        interactionQuestion = nil
-    }
-
     func resetSession() {
         state = .idle
-        currentCaption = ""
-        displayedCaption = ""
         fullTranscript = ""
-        interactionQuestion = nil
         analysisResult = nil
         errorMessage = nil
         elapsedTime = 0
         session = Session()
-        captionTimer?.invalidate()
-        captionTimer = nil
         stopDurationTimer()
         recordingPreparationWorkItem?.cancel()
         ignoreInitialTranscriptWorkItem?.cancel()
@@ -203,7 +178,6 @@ class SessionViewModel: ObservableObject {
     }
 
     deinit {
-        captionTimer?.invalidate()
         durationTimer?.invalidate()
         webSocketService.disconnect()
         audioService.stopRecording()

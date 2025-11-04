@@ -18,8 +18,6 @@ class WebSocketService: WebSocketDelegate {
 
     var onConnected: (() -> Void)?
     var onTranscript: ((String, Bool) -> Void)?
-    var onCaption: ((String) -> Void)?
-    var onInteraction: ((String) -> Void)?
     var onAnalysis: ((AnalysisResult, [TranscriptWord]?) -> Void)?
     var onError: ((String) -> Void)?
     var onReconnecting: (() -> Void)?
@@ -167,16 +165,6 @@ class WebSocketService: WebSocketDelegate {
             if let text = json["text"] as? String,
                let isFinal = json["isFinal"] as? Bool {
                 onTranscript?(text, isFinal)
-            }
-
-        case "caption":
-            if let text = json["text"] as? String {
-                onCaption?(text)
-            }
-
-        case "interaction":
-            if let question = json["question"] as? String {
-                onInteraction?(question)
             }
 
         case "analysis":

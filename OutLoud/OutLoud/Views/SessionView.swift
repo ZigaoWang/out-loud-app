@@ -88,10 +88,6 @@ struct SessionView: View {
                     )
             }
 
-            if let question = viewModel.interactionQuestion {
-                interactionOverlay(question)
-            }
-
             if let error = viewModel.errorMessage {
                 errorBanner(error)
             }
@@ -563,46 +559,6 @@ struct SessionView: View {
     }
 
     // MARK: - Overlays
-
-    private func interactionOverlay(_ question: String) -> some View {
-        ZStack {
-            Color.black.opacity(0.25)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    viewModel.dismissInteractionQuestion()
-                }
-
-            VStack(alignment: .leading, spacing: SessionTheme.Spacing.lg) {
-                HStack {
-                    Image(systemName: "sparkles")
-                        .foregroundColor(SessionTheme.secondary)
-
-                    Text("AI Prompt")
-                        .font(.headline)
-                        .foregroundColor(SessionTheme.textPrimary)
-
-                    Spacer()
-
-                    Button(action: viewModel.dismissInteractionQuestion) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(SessionTheme.textTertiary)
-                            .font(.title3)
-                    }
-                }
-
-                Text(question)
-                    .font(.body)
-                    .foregroundColor(SessionTheme.textSecondary)
-                    .lineSpacing(5)
-            }
-            .padding(SessionTheme.Spacing.xl)
-            .background(SessionTheme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: SessionTheme.Radius.xl))
-            .shadow(color: Color.black.opacity(0.16), radius: 16, x: 0, y: 10)
-            .padding(.horizontal, SessionTheme.Spacing.xl)
-        }
-        .transition(.opacity)
-    }
 
     private var uploadProgressOverlay: some View {
         VStack {

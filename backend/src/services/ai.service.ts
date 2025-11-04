@@ -14,11 +14,6 @@ interface AnalysisResult {
   followUpQuestion: string;
 }
 
-interface InteractionSuggestion {
-  shouldInterrupt: boolean;
-  question?: string;
-}
-
 export class AIService {
   private openai: OpenAI;
 
@@ -95,56 +90,6 @@ Be supportive yet honest. Focus on growth and deeper understanding.`;
       followUpQuestion: result.followUpQuestion || 'What would you like to explore next?',
     };
   }
-
-  async shouldInteractNow(
-    currentTranscript: string,
-    recentPauses: number[],
-    context: string
-  ): Promise<InteractionSuggestion> {
-    const avgPause = recentPauses.reduce((a, b) => a + b, 0) / recentPauses.length;
-
-    const prompt = `用户正在讲解学习内容。当前已说：
-
-"${currentTranscript}"
-
-上下文: ${context}
-最近平均停顿: ${avgPause}秒
-
-判断是否需要现在介入提问，以及提什么问题。如果用户：
-- 停顿过久（可能卡住了）
-- 表达模糊或跳跃
-- 偏离主题
-则建议介入。
-
-回复JSON格式：
-{
-  "shouldInterrupt": true/false,
-  "question": "如果需要介入，这里是问题"
-}`;
-
-    const response = await this.openai.chat.completions.create({
-      model: config.openai.model,
-      messages: [
-        {
-          role: 'system',
-          content: '你是一个温和的学习助手，在用户需要帮助时适时提问，引导思考。',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.5,
-    });
-
-    const result = JSON.parse(response.choices[0].message.content || '{}');
-    return {
-      shouldInterrupt: result.shouldInterrupt || false,
-      question: result.question,
-    };
-  }
-
 
   async generateSessionTitle(transcript: string): Promise<string> {
     try {
