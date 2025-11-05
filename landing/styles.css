@@ -27,30 +27,18 @@ body {
 }
 
 .hero-content .tagline {
-    font-size: 21px;
+    font-size: 24px;
     font-weight: 400;
     color: #6e6e73;
-    margin-bottom: 24px;
-    line-height: 1.4;
-}
-
-.status-badge {
-    display: inline-block;
-    background: #e8f4fd;
-    color: #0071e3;
-    padding: 8px 14px;
-    border-radius: 14px;
-    font-size: 13px;
-    font-weight: 500;
     margin-bottom: 40px;
+    line-height: 1.4;
 }
 
 .hero {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 80px;
-    margin-bottom: 80px;
+    gap: 100px;
 }
 
 .hero-content {
@@ -63,35 +51,16 @@ body {
 }
 
 .phone-preview img {
-    max-width: 300px;
+    max-width: 320px;
     width: 100%;
     height: auto;
-    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.1));
-}
-
-.features {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-    margin-bottom: 48px;
-}
-
-.feature h3 {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-
-.feature p {
-    color: #6e6e73;
-    font-size: 14px;
-    line-height: 1.5;
+    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.08));
 }
 
 .cta-group {
     display: flex;
     gap: 12px;
-    margin-bottom: 24px;
+    margin-bottom: 40px;
 }
 
 .btn {
@@ -122,22 +91,14 @@ body {
     cursor: pointer;
 }
 
-.status-text {
-    font-size: 13px;
-    color: #0071e3;
-    font-weight: 500;
-    margin-bottom: 24px;
+.footer-text {
+    font-size: 14px;
+    color: #86868b;
 }
 
-.developer {
-    font-size: 15px;
-    color: #6e6e73;
-}
-
-.developer a {
+.footer-text a {
     color: #0071e3;
     text-decoration: none;
-    font-weight: 500;
 }
 
 .modal {
@@ -172,26 +133,33 @@ body {
 
 .modal-content {
     background: white;
-    padding: 48px;
-    border-radius: 20px;
-    max-width: 480px;
+    padding: 56px 48px 48px;
+    border-radius: 24px;
+    max-width: 500px;
     margin: 20px;
     text-align: center;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
     animation: slideUp 0.3s ease;
 }
 
+.modal-icon {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 24px;
+}
+
 .modal-content h2 {
-    font-size: 32px;
+    font-size: 28px;
     font-weight: 700;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
+    color: #1d1d1f;
 }
 
 .modal-content p {
     color: #6e6e73;
-    font-size: 17px;
+    font-size: 16px;
     line-height: 1.6;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .modal-buttons {
