@@ -13,24 +13,23 @@ body {
 }
 
 .container {
-    max-width: 980px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 80px 20px;
-    text-align: center;
+    padding: 80px 40px;
 }
 
-header h1 {
+.hero-content h1 {
     font-size: 56px;
     font-weight: 600;
     letter-spacing: -0.02em;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
 }
 
-.tagline {
-    font-size: 28px;
+.hero-content .tagline {
+    font-size: 24px;
     font-weight: 400;
     color: #6e6e73;
-    margin-bottom: 60px;
+    margin-bottom: 20px;
 }
 
 .status-badge {
@@ -40,11 +39,24 @@ header h1 {
     padding: 6px 14px;
     border-radius: 12px;
     font-size: 14px;
-    margin-bottom: 60px;
+    margin-bottom: 40px;
+}
+
+.hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 80px;
+    margin-bottom: 80px;
+}
+
+.hero-content {
+    flex: 1;
+    text-align: left;
 }
 
 .phone-preview {
-    margin-bottom: 80px;
+    flex-shrink: 0;
 }
 
 .phone-preview img {
@@ -54,10 +66,10 @@ header h1 {
 }
 
 .features {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 40px;
-    margin-bottom: 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    margin-bottom: 40px;
 }
 
 .feature h3 {
@@ -69,10 +81,6 @@ header h1 {
 .feature p {
     color: #6e6e73;
     font-size: 17px;
-}
-
-.cta {
-    margin-bottom: 80px;
 }
 
 .btn {
@@ -105,16 +113,24 @@ footer p {
 }
 
 @media (max-width: 768px) {
-    header h1 {
+    .container {
+        padding: 40px 20px;
+    }
+
+    .hero-content h1 {
         font-size: 40px;
     }
 
-    .tagline {
-        font-size: 21px;
+    .hero-content .tagline {
+        font-size: 19px;
     }
 
-    .features {
-        grid-template-columns: 1fr;
-        gap: 30px;
+    .hero {
+        flex-direction: column;
+        gap: 40px;
+    }
+
+    .hero-content {
+        text-align: center;
     }
 }
