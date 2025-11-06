@@ -62,18 +62,26 @@ router.get('/', authMiddleware, async (req: AuthRequest, res: Response) => {
 
 router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const data = await supabase.getSession(req.user!.id, req.params.id);
+    const { id } = z.object({ id: z.string().max(255).regex(/^[a-zA-Z0-9-_]+$/) }).parse(req.params);
+    const data = await supabase.getSession(req.user!.id, id);
     res.json(data);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid session ID' });
+    }
     res.status(404).json({ error: 'Session not found' });
   }
 });
 
 router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    await supabase.deleteSession(req.user!.id, req.params.id);
+    const { id } = z.object({ id: z.string().max(255).regex(/^[a-zA-Z0-9-_]+$/) }).parse(req.params);
+    await supabase.deleteSession(req.user!.id, id);
     res.json({ success: true });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid session ID' });
+    }
     res.status(500).json({ error: 'Failed to delete session' });
   }
 });

@@ -1,13 +1,17 @@
 import { Router } from 'express';
 import multer from 'multer';
+import { z } from 'zod';
 import { supabase } from '../services/supabase.service';
 
 const router = Router();
 
-// File size limit: 50MB
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 }
+});
+
+const uploadBodySchema = z.object({
+  sessionId: z.string().max(255).regex(/^[a-zA-Z0-9-_]+$/).optional(),
 });
 
 router.post('/audio', upload.single('audio'), async (req, res) => {
@@ -28,14 +32,13 @@ router.post('/audio', upload.single('audio'), async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // Validate file type
     const allowedMimeTypes = ['audio/mp4', 'audio/m4a', 'audio/mpeg', 'audio/wav', 'audio/x-m4a'];
     if (!allowedMimeTypes.includes(req.file.mimetype)) {
       return res.status(400).json({ error: 'Invalid file type' });
     }
 
-    const sessionId = req.body.sessionId || Date.now().toString();
-    const path = `${user.id}/${sessionId}.m4a`;
+    const { sessionId } = uploadBodySchema.parse(req.body);
+    const path = `${user.id}/${sessionId || Date.now().toString()}.m4a`;
 
     const { error: uploadError } = await supabase.storage
       .from('audio-recordings')
@@ -51,6 +54,9 @@ router.post('/audio', upload.single('audio'), async (req, res) => {
 
     res.json({ path });
   } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid session ID format' });
+    }
     console.error('Upload failed:', error);
     res.status(500).json({ error: error.message });
   }
