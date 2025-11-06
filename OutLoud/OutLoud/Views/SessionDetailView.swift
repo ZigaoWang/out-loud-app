@@ -133,7 +133,7 @@ struct SessionDetailView: View {
 
                         Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                             .font(.title2)
-                            .foregroundColor(.white)
+                            .foregroundColor(Color(.systemBackground))
                             .offset(x: isPlaying ? 0 : 2)
                     }
                 }

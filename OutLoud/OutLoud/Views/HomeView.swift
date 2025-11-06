@@ -53,7 +53,7 @@ struct HomeView: View {
                             Text("Start Session")
                                 .font(.system(size: 18, weight: .semibold, design: .rounded))
                         }
-                        .foregroundColor(.white)
+                        .foregroundColor(Color(.systemBackground))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 18)
                         .background(

@@ -490,7 +490,7 @@ struct SessionView: View {
                         Spacer()
                     }
                     .padding(.vertical, 18)
-                    .foregroundColor(.white)
+                    .foregroundColor(Color(.systemBackground))
                     .background(buttonColor)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .opacity((viewModel.state == .processing || viewModel.state == .preparing) ? 0.5 : 1.0)
@@ -594,11 +594,11 @@ struct SessionView: View {
         VStack {
             HStack(spacing: SessionTheme.Spacing.md) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.white)
+                    .foregroundColor(Color(.systemBackground))
 
                 Text(error)
                     .font(.subheadline)
-                    .foregroundColor(.white)
+                    .foregroundColor(Color(.systemBackground))
             }
             .padding(.horizontal, SessionTheme.Spacing.lg)
             .padding(.vertical, SessionTheme.Spacing.md)
