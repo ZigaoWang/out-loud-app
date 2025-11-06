@@ -300,13 +300,58 @@ class AudioRecordingService: NSObject {
             self?.onAudioLevel?(normalizedLevel)
         }
 
-        // Convert to Data for sending to backend
-        let data = Data(bytes: channelData, count: frameLength * MemoryLayout<Float>.size)
-
-        // Send to backend (on background thread to avoid blocking)
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            self?.onAudioBuffer?(data)
+        // Compress audio before sending
+        if let compressedData = compressAudioBuffer(convertedBuffer) {
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                self?.onAudioBuffer?(compressedData)
+            }
+        } else {
+            // Fallback to uncompressed if compression fails
+            let data = Data(bytes: channelData, count: frameLength * MemoryLayout<Float>.size)
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                self?.onAudioBuffer?(data)
+            }
         }
+    }
+
+    private func compressAudioBuffer(_ buffer: AVAudioPCMBuffer) -> Data? {
+        guard let compressedFormat = AVAudioFormat(
+            commonFormat: .pcmFormatInt16,
+            sampleRate: buffer.format.sampleRate,
+            channels: buffer.format.channelCount,
+            interleaved: true
+        ) else {
+            return nil
+        }
+
+        guard let converter = AVAudioConverter(from: buffer.format, to: compressedFormat) else {
+            return nil
+        }
+
+        let capacity = buffer.frameLength
+        guard let compressedBuffer = AVAudioPCMBuffer(pcmFormat: compressedFormat, frameCapacity: capacity) else {
+            return nil
+        }
+
+        var error: NSError?
+        let inputBlock: AVAudioConverterInputBlock = { _, outStatus in
+            outStatus.pointee = .haveData
+            return buffer
+        }
+
+        let status = converter.convert(to: compressedBuffer, error: &error, withInputFrom: inputBlock)
+
+        guard status != .error, error == nil, compressedBuffer.frameLength > 0 else {
+            return nil
+        }
+
+        guard let int16Data = compressedBuffer.int16ChannelData else {
+            return nil
+        }
+
+        let frameLength = Int(compressedBuffer.frameLength)
+        let channelCount = Int(compressedBuffer.format.channelCount)
+        return Data(bytes: int16Data[0], count: frameLength * channelCount * MemoryLayout<Int16>.size)
     }
 
     private func notifyError(_ message: String) {

@@ -85,7 +85,7 @@ export class SonioxService {
               model: config.soniox.model,
               language_hints: ['zh', 'en'],
               enable_endpoint_detection: true,
-              audio_format: 'pcm_f32le',
+              audio_format: 'pcm_s16le',
               sample_rate: 16000,
               num_channels: 1,
             };
