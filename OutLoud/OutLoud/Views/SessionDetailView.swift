@@ -255,7 +255,7 @@ struct SessionDetailView: View {
             let hasBeenSpoken = currentTime >= (word.endTime - tolerance)
 
             if isCurrentWord {
-                wordText.foregroundColor = .white
+                wordText.foregroundColor = Color(.systemBackground)
                 wordText.backgroundColor = theme.primary
             } else if hasBeenSpoken {
                 wordText.foregroundColor = theme.textSecondary
