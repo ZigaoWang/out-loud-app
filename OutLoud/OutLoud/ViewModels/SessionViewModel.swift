@@ -10,6 +10,7 @@ class SessionViewModel: ObservableObject {
     @Published var elapsedTime: TimeInterval = 0
 
     private var session: Session
+    private var transcriptUpdateWorkItem: DispatchWorkItem?
     private let audioService: AudioRecordingService
     private let webSocketService: WebSocketService
     private let supabaseService: SupabaseService
@@ -51,12 +52,20 @@ class SessionViewModel: ObservableObject {
 
         // WebSocket callbacks
         webSocketService.onTranscript = { [weak self] text, isFinal in
-            DispatchQueue.main.async {
-                guard let self = self, !self.isIgnoringInitialTranscript else { return }
-                self.fullTranscript = text
-                if isFinal {
+            guard let self = self, !self.isIgnoringInitialTranscript else { return }
+
+            if isFinal {
+                DispatchQueue.main.async {
+                    self.fullTranscript = text
                     self.session.transcript = text
                 }
+            } else {
+                self.transcriptUpdateWorkItem?.cancel()
+                let workItem = DispatchWorkItem {
+                    self.fullTranscript = text
+                }
+                self.transcriptUpdateWorkItem = workItem
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: workItem)
             }
         }
 
@@ -156,6 +165,7 @@ class SessionViewModel: ObservableObject {
         stopDurationTimer()
         recordingPreparationWorkItem?.cancel()
         ignoreInitialTranscriptWorkItem?.cancel()
+        transcriptUpdateWorkItem?.cancel()
         isIgnoringInitialTranscript = false
         webSocketService.disconnect()
     }
@@ -181,6 +191,7 @@ class SessionViewModel: ObservableObject {
         audioService.stopRecording()
         recordingPreparationWorkItem?.cancel()
         ignoreInitialTranscriptWorkItem?.cancel()
+        transcriptUpdateWorkItem?.cancel()
     }
 
     private func beginRecordingWithDelay() {

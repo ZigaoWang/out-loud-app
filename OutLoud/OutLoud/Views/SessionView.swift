@@ -308,10 +308,8 @@ struct SessionView: View {
             }
             .frame(minHeight: 200, maxHeight: 400)
             .onChange(of: viewModel.fullTranscript) { _ in
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        proxy.scrollTo("bottom", anchor: .bottom)
-                    }
+                withAnimation(.easeOut(duration: 0.2)) {
+                    proxy.scrollTo("bottom", anchor: .bottom)
                 }
             }
         }
