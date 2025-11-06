@@ -14,13 +14,13 @@ struct AppTheme {
 
     // Neutrals - calm background tones
     static let surface = Color(.systemBackground)
-    static let surfaceSecondary = Color(red: 0.97, green: 0.97, blue: 0.98)
-    static let surfaceTertiary = Color(red: 0.95, green: 0.95, blue: 0.96)
+    static let surfaceSecondary = Color(.secondarySystemBackground)
+    static let surfaceTertiary = Color(.tertiarySystemBackground)
 
     // Text colors
-    static let textPrimary = Color.primary
-    static let textSecondary = Color.secondary
-    static let textTertiary = Color(white: 0.5)
+    static let textPrimary = Color(.label)
+    static let textSecondary = Color(.secondaryLabel)
+    static let textTertiary = Color(.tertiaryLabel)
 
     // Spacing system
     struct Spacing {

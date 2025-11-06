@@ -1,17 +1,17 @@
 import SwiftUI
 
 private enum SessionTheme {
-    static let primary = Color.black
+    static let primary = Color(.label)
     static let secondary = Color(red: 0.20, green: 0.78, blue: 0.35)
-    static let accent = Color.black
+    static let accent = Color(.label)
     static let recording = Color(red: 0.95, green: 0.26, blue: 0.21)
     static let success = Color(red: 0.20, green: 0.78, blue: 0.35)
     static let surface = Color(.systemBackground)
-    static let surfaceSecondary = Color(red: 0.98, green: 0.98, blue: 0.98)
-    static let surfaceTertiary = Color(red: 0.98, green: 0.98, blue: 0.98)
-    static let textPrimary = Color.primary
-    static let textSecondary = Color.secondary
-    static let textTertiary = Color(white: 0.6)
+    static let surfaceSecondary = Color(.secondarySystemBackground)
+    static let surfaceTertiary = Color(.secondarySystemBackground)
+    static let textPrimary = Color(.label)
+    static let textSecondary = Color(.secondaryLabel)
+    static let textTertiary = Color(.tertiaryLabel)
 
     enum Spacing {
         static let xs: CGFloat = 4
@@ -570,19 +570,19 @@ struct SessionView: View {
                         .font(.system(size: 18))
                     Text("Saved")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white)
+                        .foregroundColor(Color(.systemBackground))
                 } else {
                     ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .progressViewStyle(CircularProgressViewStyle(tint: Color(.systemBackground)))
                         .scaleEffect(0.8)
                     Text("Saving...")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white)
+                        .foregroundColor(Color(.systemBackground))
                 }
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
-            .background(Color.black.opacity(0.85))
+            .background(Color(.label).opacity(0.85))
             .clipShape(Capsule())
             .padding(.bottom, 40)
         }

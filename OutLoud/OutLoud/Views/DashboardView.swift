@@ -2,13 +2,13 @@ import SwiftUI
 import AVFoundation
 
 enum DashboardTheme {
-    static let primary = Color.black
+    static let primary = Color(.label)
     static let secondary = Color(red: 0.20, green: 0.78, blue: 0.35)
     static let surface = Color(.systemBackground)
-    static let surfaceSecondary = Color(red: 0.98, green: 0.98, blue: 0.98)
-    static let textPrimary = Color.primary
-    static let textSecondary = Color.secondary
-    static let textTertiary = Color(white: 0.6)
+    static let surfaceSecondary = Color(.secondarySystemBackground)
+    static let textPrimary = Color(.label)
+    static let textSecondary = Color(.secondaryLabel)
+    static let textTertiary = Color(.tertiaryLabel)
 }
 
 struct DashboardView: View {
@@ -142,14 +142,14 @@ struct DashboardView: View {
         }) {
             Text("Start Recording")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundColor(Color(.systemBackground))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 18)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
                         .fill(
                             LinearGradient(
-                                colors: [Color.black, Color.black.opacity(0.9)],
+                                colors: [Color(.label), Color(.label).opacity(0.9)],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
@@ -253,7 +253,7 @@ struct StatCard: View {
                 .fill(DashboardTheme.surface)
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.black.opacity(0.04), lineWidth: 1)
+                        .stroke(Color(.separator).opacity(0.3), lineWidth: 1)
                 )
         )
     }
@@ -307,7 +307,7 @@ struct SessionRow: View {
                 .fill(DashboardTheme.surface)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.black.opacity(0.04), lineWidth: 1)
+                        .stroke(Color(.separator).opacity(0.3), lineWidth: 1)
                 )
         )
     }
