@@ -15,6 +15,18 @@ struct DashboardView: View {
     @StateObject private var sessionManager = SessionManager.shared
     @StateObject private var supabase = SupabaseService.shared
     @State private var navigateToSession = false
+    @State private var searchText = ""
+
+    var filteredSessions: [SavedSession] {
+        if searchText.isEmpty {
+            return sessionManager.savedSessions
+        }
+        return sessionManager.savedSessions.filter { session in
+            session.displayTitle.localizedCaseInsensitiveContains(searchText) ||
+            session.transcript.localizedCaseInsensitiveContains(searchText) ||
+            (session.analysis?.summary.localizedCaseInsensitiveContains(searchText) ?? false)
+        }
+    }
 
     var body: some View {
         NavigationView {
@@ -28,10 +40,16 @@ struct DashboardView: View {
                         statsSection
                         startButton
 
+                        if !sessionManager.savedSessions.isEmpty {
+                            searchBar
+                        }
+
                         if sessionManager.isLoadingSessions {
                             loadingSection
-                        } else if !sessionManager.savedSessions.isEmpty {
+                        } else if !filteredSessions.isEmpty {
                             historySection
+                        } else if !sessionManager.savedSessions.isEmpty {
+                            noResultsSection
                         } else {
                             emptySection
                         }
@@ -134,6 +152,30 @@ struct DashboardView: View {
         }
     }
 
+    // MARK: - Search Bar
+
+    private var searchBar: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(DashboardTheme.textTertiary)
+            TextField("Search sessions...", text: $searchText)
+                .foregroundColor(DashboardTheme.textPrimary)
+            if !searchText.isEmpty {
+                Button(action: { searchText = "" }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(DashboardTheme.textTertiary)
+                }
+            }
+        }
+        .padding(12)
+        .background(DashboardTheme.surface)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(.separator).opacity(0.3), lineWidth: 1)
+        )
+    }
+
     // MARK: - Start Button
 
     private var startButton: some View {
@@ -191,16 +233,39 @@ struct DashboardView: View {
         .padding(.vertical, 40)
     }
 
+    private var noResultsSection: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 48))
+                .foregroundColor(DashboardTheme.textTertiary.opacity(0.5))
+            Text("No results found")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(DashboardTheme.textPrimary)
+            Text("Try a different search term")
+                .font(.system(size: 14))
+                .foregroundColor(DashboardTheme.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+    }
+
     // MARK: - History
 
     private var historySection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Recent")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(DashboardTheme.textPrimary)
+            HStack {
+                Text(searchText.isEmpty ? "Recent" : "Results")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(DashboardTheme.textPrimary)
+                if !searchText.isEmpty {
+                    Text("(\(filteredSessions.count))")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(DashboardTheme.textSecondary)
+                }
+            }
 
             VStack(spacing: 10) {
-                ForEach(sessionManager.savedSessions.prefix(10)) { session in
+                ForEach(filteredSessions.prefix(10)) { session in
                     NavigationLink(destination: SessionDetailView(session: session, isPresented: .constant(true))) {
                         SessionRow(session: session)
                     }
