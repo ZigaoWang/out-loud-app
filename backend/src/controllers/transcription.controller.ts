@@ -2,6 +2,7 @@ import { WebSocket } from 'ws';
 import { SonioxService } from '../services/soniox.service';
 import { AIService } from '../services/ai.service';
 import { SupabaseService } from '../services/supabase.service';
+import logger from '../utils/logger';
 
 interface TranscriptWord {
   word: string;
@@ -149,12 +150,12 @@ export class TranscriptionController {
         .trim();
 
       if (!transcript) {
-        console.log('⚠️ No transcript to analyze');
+        logger.warn('no_transcript_to_analyze', { sessionId });
         return;
       }
 
       if (transcript.length > 50000) {
-        console.error('❌ Transcript too long:', transcript.length);
+        logger.error('transcript_too_long', { sessionId, length: transcript.length });
         return;
       }
 
@@ -189,13 +190,13 @@ export class TranscriptionController {
             analysis: analysisWithTitle,
             title: title,
           });
-          console.log('✅ Session saved to Supabase');
+          logger.info('session_saved', { sessionId, userId: session.userId, duration });
         } catch (error) {
-          console.error('Failed to save to Supabase:', error);
+          logger.error('session_save_failed', { sessionId, userId: session.userId, error: error instanceof Error ? error.message : 'Unknown error' });
         }
       }
     } catch (error) {
-      console.error('AI analysis failed:', error);
+      logger.error('ai_analysis_failed', { sessionId, error: error instanceof Error ? error.message : 'Unknown error' });
 
       // Fallback: send basic response if AI fails
       session.clientWs.send(JSON.stringify({

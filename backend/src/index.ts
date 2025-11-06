@@ -10,6 +10,7 @@ import { SupabaseService } from './services/supabase.service';
 import authRoutes from './routes/auth.routes';
 import sessionsRoutes from './routes/sessions.routes';
 import uploadRoutes from './routes/upload.routes';
+import logger from './utils/logger';
 
 const app = express();
 const server = createServer(app);
@@ -108,17 +109,16 @@ wss.on('connection', async (ws: WebSocket, req) => {
       return;
     }
 
-    console.log(`✅ WebSocket connected: ${sessionId} (user: ${data.user.id})`);
+    logger.info('websocket_connected', { sessionId, userId: data.user.id });
 
     transcriptionController.handleConnection(ws, sessionId, data.user.id);
   } catch (err) {
-    console.error('❌ WebSocket connection error:', err);
+    logger.error('websocket_connection_error', { error: err instanceof Error ? err.message : 'Unknown error' });
     ws.send(JSON.stringify({ type: 'error', message: 'Connection failed' }));
     ws.close(1011, 'Internal error');
   }
 });
 
 server.listen(config.port, () => {
-  console.log(`🎙 Out Loud Backend running on port ${config.port}`);
-  console.log(`WebSocket available at ws://localhost:${config.port}`);
+  logger.info('server_started', { port: config.port });
 });

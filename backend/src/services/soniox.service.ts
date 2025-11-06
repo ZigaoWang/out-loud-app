@@ -1,5 +1,6 @@
 import WebSocket from 'ws';
 import { config } from '../../config';
+import logger from '../utils/logger';
 
 interface SonioxConfig {
   api_key: string;
@@ -44,30 +45,28 @@ export class SonioxService {
         this.allWords = [];
         this.isConnected = false;
 
-        // Validate API key
         if (!config.soniox.apiKey || config.soniox.apiKey.trim() === '') {
           const error = 'Missing or invalid Soniox API key';
-          console.error('❌', error);
+          logger.error('soniox_invalid_api_key');
           this.notifyError(error);
           return reject(new Error(error));
         }
 
-        // Validate WebSocket URL
         if (!config.soniox.wsUrl || !config.soniox.wsUrl.startsWith('wss://')) {
           const error = 'Invalid Soniox WebSocket URL';
-          console.error('❌', error);
+          logger.error('soniox_invalid_url', { url: config.soniox.wsUrl });
           this.notifyError(error);
           return reject(new Error(error));
         }
 
-        console.log('🔌 Connecting to Soniox WebSocket...');
+        logger.info('soniox_connecting');
         this.ws = new WebSocket(config.soniox.wsUrl, {
           handshakeTimeout: 10000, // 10 second timeout
         });
 
         const connectionTimeout = setTimeout(() => {
           if (!this.isConnected) {
-            console.error('❌ Soniox connection timeout');
+            logger.error('soniox_connection_timeout');
             this.ws?.terminate();
             this.notifyError('Connection timeout');
             reject(new Error('Connection timeout'));
@@ -77,7 +76,7 @@ export class SonioxService {
         this.ws.on('open', () => {
           clearTimeout(connectionTimeout);
           this.isConnected = true;
-          console.log('✅ Connected to Soniox WebSocket');
+          logger.info('soniox_connected');
 
           try {
             // Send configuration
@@ -95,7 +94,7 @@ export class SonioxService {
             this.startHeartbeat();
             resolve();
           } catch (error) {
-            console.error('❌ Failed to send config:', error);
+            logger.error('soniox_config_failed', { error: error instanceof Error ? error.message : 'Unknown error' });
             this.notifyError('Failed to configure Soniox');
             reject(error);
           }
@@ -107,38 +106,33 @@ export class SonioxService {
           try {
             const message = JSON.parse(data.toString());
 
-            // Check for error from Soniox
             if (message.error_code) {
-              const errorMsg = `Soniox error: ${message.error_code} - ${message.error_message}`;
-              console.error('❌', errorMsg);
-              this.notifyError(errorMsg);
+              logger.error('soniox_error', { code: message.error_code, message: message.error_message });
+              this.notifyError(`Soniox error: ${message.error_code} - ${message.error_message}`);
               return;
             }
 
-            // Parse tokens
             if (message.tokens && Array.isArray(message.tokens) && message.tokens.length > 0) {
               this.processTokens(message.tokens);
             }
 
-            // Check for finished
             if (message.finished) {
-              console.log('✅ Soniox session finished');
+              logger.info('soniox_session_finished');
             }
           } catch (error) {
-            console.error('❌ Error parsing Soniox message:', error);
-            console.error('Raw message:', data.toString().substring(0, 200));
+            logger.error('soniox_parse_error', { error: error instanceof Error ? error.message : 'Unknown error', rawMessage: data.toString().substring(0, 200) });
             this.notifyError('Failed to parse transcription response');
           }
         });
 
         this.ws.on('error', (error) => {
-          console.error('❌ Soniox WebSocket error:', error);
+          logger.error('soniox_websocket_error', { error: error.message, reconnectAttempts: this.reconnectAttempts });
           this.notifyError(`WebSocket error: ${error.message}`);
 
           if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
-            console.log(`🔄 Reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
-            setTimeout(() => this.connect().catch(console.error), 2000);
+            logger.info('soniox_reconnecting', { attempt: this.reconnectAttempts, max: this.maxReconnectAttempts });
+            setTimeout(() => this.connect().catch(err => logger.error('soniox_reconnect_failed', { error: err.message })), 2000);
           } else {
             reject(error);
           }
@@ -147,17 +141,16 @@ export class SonioxService {
         this.ws.on('close', (code, reason) => {
           this.isConnected = false;
           this.stopHeartbeat();
-          console.log(`🔌 Soniox WebSocket closed - Code: ${code}, Reason: ${reason || 'none'}`);
+          logger.info('soniox_closed', { code, reason: reason || 'none' });
 
           if (code !== 1000 && code !== 1001) {
-            // Abnormal closure
-            console.error('⚠️ Abnormal WebSocket closure');
+            logger.warn('soniox_abnormal_closure', { code });
             this.notifyError('Connection closed unexpectedly');
           }
         });
 
       } catch (error) {
-        console.error('❌ Failed to create WebSocket connection:', error);
+        logger.error('soniox_connection_failed', { error: error instanceof Error ? error.message : 'Unknown error' });
         this.notifyError('Failed to establish connection');
         reject(error);
       }
@@ -199,7 +192,7 @@ export class SonioxService {
         this.onTranscriptCallback(this.finalTranscript + nonFinalText, false);
       }
     } catch (error) {
-      console.error('❌ Error processing tokens:', error);
+      logger.error('soniox_token_processing_error', { error: error instanceof Error ? error.message : 'Unknown error' });
       this.notifyError('Failed to process transcription tokens');
     }
   }
@@ -207,19 +200,19 @@ export class SonioxService {
   sendAudio(audioData: Buffer): void {
     try {
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-        console.error('❌ Cannot send audio: WebSocket not open');
+        logger.warn('soniox_audio_send_failed', { reason: 'WebSocket not open' });
         this.notifyError('Connection not ready');
         return;
       }
 
       if (!audioData || audioData.length === 0) {
-        console.warn('⚠️ Attempted to send empty audio buffer');
+        logger.warn('soniox_empty_audio_buffer');
         return;
       }
 
       this.ws.send(audioData);
     } catch (error) {
-      console.error('❌ Failed to send audio:', error);
+      logger.error('soniox_audio_send_error', { error: error instanceof Error ? error.message : 'Unknown error' });
       this.notifyError('Failed to send audio data');
     }
   }
@@ -227,12 +220,11 @@ export class SonioxService {
   stopTranscription(): void {
     try {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        // Send empty audio to signal end
         this.ws.send(Buffer.alloc(0));
-        console.log('📤 Sent end-of-audio signal');
+        logger.info('soniox_end_signal_sent');
       }
     } catch (error) {
-      console.error('❌ Error stopping transcription:', error);
+      logger.error('soniox_stop_error', { error: error instanceof Error ? error.message : 'Unknown error' });
     }
   }
 
@@ -251,9 +243,9 @@ export class SonioxService {
 
       this.isConnected = false;
       this.reconnectAttempts = 0;
-      console.log('✅ Soniox disconnected');
+      logger.info('soniox_disconnected');
     } catch (error) {
-      console.error('❌ Error during disconnect:', error);
+      logger.error('soniox_disconnect_error', { error: error instanceof Error ? error.message : 'Unknown error' });
     }
   }
 
@@ -292,19 +284,19 @@ export class SonioxService {
     this.heartbeatInterval = setInterval(() => {
       const timeSinceLastMessage = Date.now() - this.lastMessageTime;
 
-      if (timeSinceLastMessage > 30000) { // 30 seconds of silence
-        console.warn('⚠️ No messages from Soniox for 30 seconds');
+      if (timeSinceLastMessage > 30000) {
+        logger.warn('soniox_no_messages', { timeSinceLastMessage });
 
         if (!this.isConnectionAlive()) {
-          console.error('❌ Connection appears dead, attempting reconnect');
+          logger.error('soniox_connection_dead');
           this.disconnect();
           this.connect().catch(error => {
-            console.error('❌ Reconnection failed:', error);
+            logger.error('soniox_reconnect_failed', { error: error instanceof Error ? error.message : 'Unknown error' });
             this.notifyError('Lost connection to transcription service');
           });
         }
       }
-    }, 10000); // Check every 10 seconds
+    }, 10000);
   }
 
   private stopHeartbeat(): void {
@@ -352,7 +344,7 @@ export class SonioxService {
       words.push({ word, startTime: startMs / 1000, endTime: endMs / 1000 });
     }
 
-    console.log(`📝 Merged ${tokens.length} subwords → ${words.length} words`);
+    logger.debug('soniox_words_merged', { subwords: tokens.length, words: words.length });
     return words;
   }
 }
