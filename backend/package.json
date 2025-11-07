@@ -17,7 +17,7 @@
     "transcription"
   ],
   "author": "",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@supabase/supabase-js": "^2.76.1",
     "@types/multer": "^2.0.0",

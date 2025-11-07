@@ -13,3 +13,7 @@ Voice recording app with real-time transcription and AI analysis.
 ## Setup
 
 For detailed setup and deployment instructions, see [SETUP.md](SETUP.md).
+
+## License
+
+See [LICENSE](LICENSE) for proprietary licensing terms and usage restrictions.
