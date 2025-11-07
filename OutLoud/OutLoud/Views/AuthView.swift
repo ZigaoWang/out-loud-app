@@ -17,27 +17,43 @@ struct AuthView: View {
     private let primaryColor = Color(red: 0.18, green: 0.36, blue: 0.98)
 
     var body: some View {
-        ZStack {
-            Color(.systemGroupedBackground)
-                .ignoresSafeArea()
-
+        NavigationStack {
             ZStack {
-                if screen == .landing {
-                    landingView
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
-                } else {
-                    formView(
-                        title: screen == .signIn ? "Sign In" : "Create Account",
-                        subtitle: screen == .signIn
-                            ? "Access your sessions, transcripts, and insights."
-                            : "Start recording, reflecting, and improving every time you speak.",
-                        showChecklist: screen == .signUp
-                    )
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                Color(.systemGroupedBackground)
+                    .ignoresSafeArea()
+
+                ZStack {
+                    if screen == .landing {
+                        landingView
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    } else {
+                        formView(
+                            title: screen == .signIn ? "Sign In" : "Create Account",
+                            subtitle: screen == .signIn
+                                ? "Access your sessions, transcripts, and insights."
+                                : "Start recording, reflecting, and improving every time you speak.",
+                            showChecklist: screen == .signUp
+                        )
+                        .transition(.opacity.combined(with: .move(edge: .trailing)))
+                    }
+                }
+                .animation(.spring(response: 0.4, dampingFraction: 0.85), value: screen)
+                .padding(.horizontal, 24)
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if screen != .landing {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button(action: { present(.landing) }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 17, weight: .semibold))
+                                Text("Back")
+                            }
+                        }
+                    }
                 }
             }
-            .animation(.spring(response: 0.4, dampingFraction: 0.85), value: screen)
-            .padding(.horizontal, 24)
         }
         .sheet(isPresented: $showResetSheet) {
             PasswordResetSheet(initialEmail: email)
@@ -61,7 +77,7 @@ struct AuthView: View {
 
             Spacer()
 
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 CTAButton(title: "Sign In", isPrimary: true, color: primaryColor) {
                     present(.signIn)
                 }
@@ -77,70 +93,60 @@ struct AuthView: View {
     // MARK: Form
     private func formView(title: String, subtitle: String, showChecklist: Bool) -> some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 28) {
-                HStack {
-                    Button(action: { present(.landing) }) {
-                        Label("Back", systemImage: "chevron.left")
-                            .font(.system(size: 15, weight: .semibold))
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(primaryColor)
-
-                    Spacer()
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
+            VStack(spacing: 32) {
+                VStack(alignment: .leading, spacing: 12) {
                     Text(title)
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
                         .foregroundStyle(Color(.label))
                     Text(subtitle)
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.system(size: 16, weight: .regular))
                         .foregroundStyle(Color(.secondaryLabel))
-                        .frame(maxWidth: 360, alignment: .leading)
+                        .lineSpacing(3)
                 }
+                .padding(.top, 8)
 
-                VStack(alignment: .leading, spacing: 24) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("EMAIL")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color(.secondaryLabel))
-                            .tracking(0.9)
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Email")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Color(.label))
 
-                        TextField("you@example.com", text: $email)
-                            .textInputAutocapitalization(.never)
-                            .keyboardType(.emailAddress)
-                            .textContentType(.username)
-                            .autocorrectionDisabled()
-                            .padding(14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color(.systemGray6))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .stroke(focusedField == .email ? Color(.systemGray3) : Color(.systemGray4), lineWidth: 1)
-                            )
-                            .foregroundStyle(Color(.label))
-                            .focused($focusedField, equals: .email)
+                            TextField("", text: $email, prompt: Text("you@example.com").foregroundColor(Color(.placeholderText)))
+                                .textInputAutocapitalization(.never)
+                                .keyboardType(.emailAddress)
+                                .textContentType(.username)
+                                .autocorrectionDisabled()
+                                .font(.system(size: 16))
+                                .foregroundStyle(Color(.label))
+                                .tint(primaryColor)
+                                .padding(16)
+                                .background(Color(.systemBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(focusedField == .email ? primaryColor.opacity(0.5) : Color(.systemGray4), lineWidth: 1.5)
+                                )
+                                .focused($focusedField, equals: .email)
+                        }
 
-                        Text("PASSWORD")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color(.secondaryLabel))
-                            .tracking(0.9)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Password")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Color(.label))
 
-                        SecureField("Enter password", text: $password)
-                            .textContentType(showChecklist ? .newPassword : .password)
-                            .padding(14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color(.systemGray6))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .stroke(focusedField == .password ? Color(.systemGray3) : Color(.systemGray4), lineWidth: 1)
-                            )
-                            .foregroundStyle(Color(.label))
-                            .focused($focusedField, equals: .password)
+                            SecureField("Enter password", text: $password)
+                                .textContentType(showChecklist ? .newPassword : .password)
+                                .font(.system(size: 16))
+                                .padding(16)
+                                .background(Color(.systemBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(focusedField == .password ? primaryColor.opacity(0.5) : Color(.systemGray4), lineWidth: 1.5)
+                                )
+                                .focused($focusedField, equals: .password)
+                        }
 
                         if screen == .signIn {
                             Button("Forgot password?") {
@@ -172,30 +178,30 @@ struct AuthView: View {
                         HStack {
                             if isLoading {
                                 ProgressView()
+                                    .tint(.white)
                             } else {
                                 Text(screen == .signUp ? "Create Account" : "Sign In")
                                     .font(.system(size: 17, weight: .semibold))
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
-                        .background(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(primaryColor)
-                        )
-                        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .padding(.vertical, 16)
+                        .background(primaryColor)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.white)
-                    .shadow(color: primaryColor.opacity(0.28), radius: 18, x: 0, y: 12)
+                    .shadow(color: primaryColor.opacity(0.3), radius: 12, x: 0, y: 6)
                     .disabled(isLoading)
+                    .opacity(isLoading ? 0.6 : 1)
                 }
-                .padding(28)
-                .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-                .shadow(color: Color.black.opacity(0.08), radius: 24, x: 0, y: 18)
+                .padding(24)
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                     Text(screen == .signIn ? "New to Out Loud?" : "Already have an account?")
+                        .font(.system(size: 15))
                         .foregroundStyle(Color(.secondaryLabel))
                     Button(screen == .signIn ? "Create an account" : "Sign in") {
                         present(screen == .signIn ? .signUp : .signIn)
@@ -203,7 +209,7 @@ struct AuthView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(primaryColor)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
 
                 Spacer(minLength: 24)
             }
@@ -348,20 +354,17 @@ private struct CTAButton: View {
             Text(title)
                 .font(.system(size: 17, weight: .semibold))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 18)
-                .background(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(isPrimary ? color : Color(.systemBackground))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                .stroke(isPrimary ? Color.clear : Color(.systemGray3), lineWidth: 1)
-                        )
+                .padding(.vertical, 16)
+                .background(isPrimary ? color : Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(isPrimary ? Color.clear : Color(.systemGray4), lineWidth: 1)
                 )
-                .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
         .buttonStyle(.plain)
         .foregroundStyle(isPrimary ? .white : Color(.label))
-        .shadow(color: isPrimary ? color.opacity(0.24) : Color.black.opacity(0.05), radius: 18, x: 0, y: 10)
+        .shadow(color: isPrimary ? color.opacity(0.3) : Color.clear, radius: 12, x: 0, y: 6)
     }
 }
 
@@ -390,28 +393,28 @@ private struct PasswordChecklist: View {
     let password: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Password requirements")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color(.secondaryLabel))
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(requirements) { requirement in
+                let satisfied = requirement.validation(password)
+                HStack(alignment: .center, spacing: 10) {
+                    Image(systemName: satisfied ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 14))
+                        .foregroundStyle(satisfied ? Color(.systemGreen) : Color(.tertiaryLabel))
 
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(requirements) { requirement in
-                    let satisfied = requirement.validation(password)
-                    HStack(alignment: .center, spacing: 12) {
-                        Image(systemName: satisfied ? "checkmark.circle.fill" : "circle")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(satisfied ? Color(.systemGreen) : Color(.tertiaryLabel))
-
-                        Text(requirement.description)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color(.label).opacity(satisfied ? 0.9 : 0.7))
-                    }
+                    Text(requirement.description)
+                        .font(.system(size: 14))
+                        .foregroundStyle(satisfied ? Color(.label) : Color(.secondaryLabel))
                 }
             }
-            .padding(20)
-            .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color(.systemGray5), lineWidth: 1)
+        )
     }
 }
 
@@ -419,17 +422,18 @@ private struct FeedbackBanner: View {
     let feedback: FeedbackMessage
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             Image(systemName: feedback.iconName)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: 14))
             Text(feedback.message)
-                .font(.system(size: 14, weight: .medium))
-            Spacer()
+                .font(.system(size: 14))
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
         }
-        .padding(16)
+        .padding(14)
         .foregroundStyle(feedback.foregroundColor)
         .background(feedback.backgroundColor)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
