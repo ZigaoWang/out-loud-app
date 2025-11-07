@@ -117,7 +117,7 @@ struct AuthView: View {
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundStyle(Color(.label))
 
-                            TextField("", text: $email, prompt: Text("you@example.com").foregroundColor(Color(.placeholderText)))
+                            TextField("Enter email", text: $email)
                                 .textInputAutocapitalization(.never)
                                 .keyboardType(.emailAddress)
                                 .textContentType(.username)
