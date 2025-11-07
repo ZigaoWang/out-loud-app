@@ -19,8 +19,7 @@
 
 ### Run Database Schema
 1. Go to SQL Editor in Supabase dashboard
-2. Run `backend/supabase-schema.sql`
-3. Run `backend/supabase-storage-setup.sql`
+2. Run `backend/supabase-setup.sql`
 
 ### Configure Authentication
 1. Go to Authentication > Settings
