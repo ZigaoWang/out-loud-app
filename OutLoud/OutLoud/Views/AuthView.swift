@@ -63,7 +63,12 @@ struct AuthView: View {
     // MARK: Landing
     private var landingView: some View {
         VStack(alignment: .leading, spacing: 40) {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 20) {
+                Image("OutLoud-iOS-Default-128x128")
+                    .resizable()
+                    .frame(width: 80, height: 80)
+                    .shadow(color: Color.white.opacity(0.3), radius: 12, x: 0, y: 0)
+
                 Text("Welcome to Out Loud")
                     .font(.system(size: 40, weight: .bold, design: .rounded))
                     .foregroundStyle(Color(.label))
