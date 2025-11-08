@@ -19,27 +19,25 @@ struct AuthView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(.systemGroupedBackground)
-                    .ignoresSafeArea()
+                if screen == .landing {
+                    landingView
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                } else {
+                    Color(.systemGroupedBackground)
+                        .ignoresSafeArea()
 
-                ZStack {
-                    if screen == .landing {
-                        landingView
-                            .transition(.opacity.combined(with: .move(edge: .bottom)))
-                    } else {
-                        formView(
-                            title: screen == .signIn ? "Sign In" : "Create Account",
-                            subtitle: screen == .signIn
-                                ? "Access your sessions, transcripts, and insights."
-                                : "Start recording, reflecting, and improving every time you speak.",
-                            showChecklist: screen == .signUp
-                        )
-                        .transition(.opacity.combined(with: .move(edge: .trailing)))
-                    }
+                    formView(
+                        title: screen == .signIn ? "Sign In" : "Create Account",
+                        subtitle: screen == .signIn
+                            ? "Access your sessions, transcripts, and insights."
+                            : "Start recording, reflecting, and improving every time you speak.",
+                        showChecklist: screen == .signUp
+                    )
+                    .padding(.horizontal, 24)
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
                 }
-                .animation(.spring(response: 0.4, dampingFraction: 0.85), value: screen)
-                .padding(.horizontal, 24)
             }
+            .animation(.spring(response: 0.4, dampingFraction: 0.85), value: screen)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 if screen != .landing {
@@ -62,36 +60,61 @@ struct AuthView: View {
 
     // MARK: Landing
     private var landingView: some View {
-        VStack(alignment: .leading, spacing: 40) {
-            VStack(alignment: .leading, spacing: 20) {
-                Image("OutLoud-iOS-Default-128x128")
-                    .resizable()
-                    .frame(width: 80, height: 80)
-                    .shadow(color: Color.white.opacity(0.3), radius: 12, x: 0, y: 0)
+        ZStack {
+            // Subtle gradient background
+            LinearGradient(
+                colors: [
+                    Color(.systemBackground),
+                    primaryColor.opacity(0.03)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
 
-                Text("Welcome to Out Loud")
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color(.label))
+            VStack(spacing: 0) {
+                Spacer()
 
-                Text("Your space to speak freely, capture every insight, and grow with clarity.")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(Color(.secondaryLabel))
-                    .frame(maxWidth: 420, alignment: .leading)
-            }
-            .padding(.top, 32)
+                VStack(spacing: 32) {
+                    // Logo with glow effect
+                    Image("OutLoud-iOS-Default-128x128")
+                        .resizable()
+                        .frame(width: 96, height: 96)
+                        .shadow(color: primaryColor.opacity(0.4), radius: 20, x: 0, y: 8)
 
-            Spacer()
+                    VStack(spacing: 16) {
+                        Text("Out Loud")
+                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color(.label), Color(.label).opacity(0.8)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
 
-            VStack(spacing: 12) {
-                CTAButton(title: "Sign In", isPrimary: true, color: primaryColor) {
-                    present(.signIn)
+                        Text("Speak, reflect, improve")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundStyle(Color(.secondaryLabel))
+                            .tracking(0.5)
+                    }
                 }
 
-                CTAButton(title: "Create Account", isPrimary: false, color: primaryColor) {
-                    present(.signUp)
+                Spacer()
+                Spacer()
+
+                VStack(spacing: 14) {
+                    CTAButton(title: "Sign In", isPrimary: true, color: primaryColor) {
+                        present(.signIn)
+                    }
+
+                    CTAButton(title: "Create Account", isPrimary: false, color: primaryColor) {
+                        present(.signUp)
+                    }
                 }
+                .padding(.horizontal, 32)
+                .padding(.bottom, 48)
             }
-            .padding(.bottom, 24)
         }
     }
 
