@@ -221,7 +221,7 @@ class SupabaseService: ObservableObject {
             audio_path: session.audioFileName
         )
 
-        try await client.database.from("sessions")
+        try await client.from("sessions")
             .upsert(sessionData, onConflict: "user_id,session_id")
             .execute()
     }
@@ -229,7 +229,7 @@ class SupabaseService: ObservableObject {
     func fetchSessions() async throws -> [SavedSession] {
         guard let user = currentUser else { return [] }
 
-        let response: [SessionDTO] = try await client.database
+        let response: [SessionDTO] = try await client
             .from("sessions")
             .select()
             .eq("user_id", value: user.id.uuidString)
@@ -244,7 +244,7 @@ class SupabaseService: ObservableObject {
         guard let user = currentUser else { throw NSError(domain: "Not authenticated", code: 401) }
 
         // Delete audio file first if exists
-        let sessions: [SessionDTO] = try await client.database
+        let sessions: [SessionDTO] = try await client
             .from("sessions")
             .select()
             .eq("user_id", value: user.id.uuidString)
@@ -256,7 +256,7 @@ class SupabaseService: ObservableObject {
             try? await client.storage.from("audio-recordings").remove(paths: [audioPath])
         }
 
-        try await client.database
+        try await client
             .from("sessions")
             .delete()
             .eq("user_id", value: user.id.uuidString)
