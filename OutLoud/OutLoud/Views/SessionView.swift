@@ -37,8 +37,9 @@ struct SessionView: View {
     @StateObject private var sessionManager = SessionManager.shared
     @Environment(\.presentationMode) var presentationMode
 
-    // Haptic feedback generator for recording state changes
-    private let hapticGenerator = UIImpactFeedbackGenerator(style: .medium)
+    // Haptic feedback generators for different recording states
+    private let startHaptic = UIImpactFeedbackGenerator(style: .heavy)
+    private let stopHaptic = UINotificationFeedbackGenerator()
 
     init(parentSessionId: String? = nil) {
         self.parentSessionId = parentSessionId
@@ -104,15 +105,26 @@ struct SessionView: View {
         .animation(.easeInOut(duration: 0.25), value: viewModel.state)
         .animation(.easeInOut(duration: 0.25), value: viewModel.analysisResult != nil)
         .onAppear {
-            hapticGenerator.prepare()
+            startHaptic.prepare()
+            stopHaptic.prepare()
             if viewModel.state == .idle {
                 viewModel.startSession()
             }
         }
         .onChange(of: viewModel.state) { newState in
-            // Trigger haptic feedback on recording start/stop
-            if newState == .recording || newState == .completed {
-                hapticGenerator.impactOccurred()
+            // Haptic feedback for button press and recording start
+            if newState == .preparing {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            } else if newState == .recording {
+                startHaptic.impactOccurred(intensity: 1.0)
+            } else if newState == .processing {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+        }
+        .onChange(of: sessionManager.uploadSuccess) { success in
+            // Success haptic when save completes
+            if success {
+                stopHaptic.notificationOccurred(.success)
             }
         }
     }
