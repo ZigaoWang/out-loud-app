@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreHaptics
 
 private enum SessionTheme {
     static let primary = Color(.label)
@@ -35,6 +36,9 @@ struct SessionView: View {
     @StateObject private var viewModel: SessionViewModel
     @StateObject private var sessionManager = SessionManager.shared
     @Environment(\.presentationMode) var presentationMode
+
+    // Haptic feedback generator for recording state changes
+    private let hapticGenerator = UIImpactFeedbackGenerator(style: .medium)
 
     init(parentSessionId: String? = nil) {
         self.parentSessionId = parentSessionId
@@ -100,8 +104,15 @@ struct SessionView: View {
         .animation(.easeInOut(duration: 0.25), value: viewModel.state)
         .animation(.easeInOut(duration: 0.25), value: viewModel.analysisResult != nil)
         .onAppear {
+            hapticGenerator.prepare()
             if viewModel.state == .idle {
                 viewModel.startSession()
+            }
+        }
+        .onChange(of: viewModel.state) { newState in
+            // Trigger haptic feedback on recording start/stop
+            if newState == .recording || newState == .completed {
+                hapticGenerator.impactOccurred()
             }
         }
     }
