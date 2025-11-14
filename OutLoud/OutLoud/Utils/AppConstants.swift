@@ -5,7 +5,7 @@ enum AppConstants {
     // MARK: - Network Configuration
     enum Network {
         static let productionWebSocketURL = "wss://api.out-loud.app"
-        static let developmentWebSocketURL = "wss://api.out-loud.app"
+        static let developmentWebSocketURL = "ws://localhost:3799"
 
         #if DEBUG
         static let defaultWebSocketURL = developmentWebSocketURL
